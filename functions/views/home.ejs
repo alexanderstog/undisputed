@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Homepage</title>
+    <%- include('head-include') %><!-- Firebase scripts -->
+    
+    
+</head>
+<body>
+
+    <%- include('navbar-include') %>
+
+    <div class="main-content">
+
+    
+    
+
+    
+    <div id="recaptcha-container">
+
+    </div>
+    <!-- Form to input phone number -->
+    
+    <form id="phone-form">
+        <p>Put in your number and you'll receive a one time passcode.</p>
+        <p id="phone-form-message" class="" style="">E.g. 07821169566</p>
+        <p id="phone-form-error" class="error" style="display:none;">Error message content</p>
+        
+        <input type="number" id="phone-number" placeholder="Enter phone number">
+        <button id="phone-auth-submit" type="button"">Send Verification Code 
+            🏌️</button>
+    </form>
+    <!-- Form to input verification code -->
+
+    <div id="verification-code-form" style="display:none;">
+        <input type="text" id="verification-code" placeholder="Enter verification code">
+        <button id="otp-auth" type="button">Verify Code</button>
+    </div>
+</div>
+
+    <script type="module">
+
+    
+        
+        import { initializeRecaptcha } from '/scripts/auth.js';
+
+        document.getElementById('phone-auth-submit').addEventListener('click', () => {
+            const phone = document.getElementById('phone-number').value;
+            
+            
+            if (phone.length < 11|phone.length > 11) {
+                document.getElementById('phone-form-error').innerHTML = "looks bad";
+                document.getElementById('phone-form-error').style.display = 'block';
+                console.log("phone looks bad");
+            } else {
+                console.log("phone number is>>>>>>>>>>>>", phone.length);
+                console.log("+44" + phone.split("0")[1]);
+                initializeRecaptcha();
+            }
+            
+        });
+
+        import { verifyCode } from '/scripts/auth.js';
+
+        document.getElementById('otp-auth').addEventListener('click', () => {
+            console.log("clicked to validate OTP");
+            verifyCode();
+        });
+
+       
+
+
+    </script>
+
+
+</body>
+</html>

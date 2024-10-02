@@ -1,0 +1,30 @@
+{
+    "short_name": "my pwa app with FIX sharetarget",
+    "name": "my pwa long name with  FIX sharetarget",
+    "icons": [
+      {
+        "src": "icons/icon-192.png",
+        "type": "image/png",
+        "sizes": "192x192"
+      },
+      {
+        "src": "icons/icon-512.png",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+    ],
+    "start_url": "/home",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#eb008c",
+    "share_target": {
+      "action": "/share-target",
+      "params": {
+        "title": "title",
+        "text": "text",
+        "url": "url",
+        "image": "image"
+      }
+    }
+  }

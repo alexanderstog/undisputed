@@ -1,0 +1,32 @@
+<nav class="navbar">
+    <a href="/competition" style="text-decoration: none!important;color:white!important"><div class="navbar-brand">⛳ OKEY '24</div></a>
+    <a class="menu-right" href="/askbob"><div class="quick-bob">ASK<br>BOB</div></a>
+    <div class="burger-menu" onclick="toggleMenu()">
+        <div class="bar"></div>
+        <div class="bar"></div>
+        <div class="bar"></div>
+    </div>
+</nav>
+
+<div class="side-menu" id="sideMenu">
+    <a href="/competition">RESULTS</a>
+    <a href="/askbob">ASK BOB</a>
+    <a href="/set-name?allowedit=true">Set name</a>
+    <div class="close-menu" onclick="closeMenu()">Close</div>
+</div>
+
+<script>
+    function toggleMenu() {
+        const menu = document.getElementById('sideMenu');
+        menu.style.width = menu.style.width === '250px' ? '0' : '250px';
+    }
+
+    function closeMenu() {
+        const menu = document.getElementById('sideMenu');
+        menu.style.width = '0';
+    }
+</script>
+
+<style>
+    
+</style>

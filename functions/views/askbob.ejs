@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Bob</title>
+    <%- include('head-include') %>
+</head>
+<body>
+    <script>
+        // Function to get the value of a cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null; // Return null if the cookie doesn't exist
+        }
+    
+        // Check if the 'username' cookie exists
+        const username = getCookie('username');
+    
+        if (!username) {
+            // Redirect to /set-name if the 'username' cookie does not exist
+            window.location.href = '/set-name';
+        }
+    </script>
+    
+    <%- include('navbar-include') %>
+    <div class="main-content-bob">
+
+        <div class="bob-chat">
+            <div class="chat-wrapper">
+                <div id="response" class="response">Alright mush? What do you want?</div>
+            </div>
+            <form id="ask-bob-form">
+                <input type="text" id="message" name="message" placeholder="Type something">
+                <button type="button" id="ask-bob-button">Ask Bob</button>
+            </form>
+            
+        </div>
+
+        
+
+    
+
+    <script src="/scripts/askbob.js"></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Homepage</title>
+    <%- include('head-include') %><!-- Firebase scripts -->
+    <style>
+        /* Basic toaster styling */
+        #toaster {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+        }
+
+        /* Show the toaster */
+        #toaster.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @-webkit-keyframes fadein {
+            from {bottom: 0; opacity: 0;} 
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+
+        @-webkit-keyframes fadeout {
+            from {bottom: 30px; opacity: 1;} 
+            to {bottom: 0; opacity: 0;}
+        }
+
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body>
+    <%- include('navbar-include') %>
+
+    <div class="main-content">
+        <div id="recaptcha-container"></div>
+
+        <!-- Form to input name -->
+        <form id="phone-form">
+            <p>Welcome to the 2024 RAGS Okey Website.<br>Enter your name to get started.</p>
+            <p id="name-form-error" class="error" style="display:none;">Please enter your name.</p>
+            <input type="text" id="name-input" placeholder="Your name">
+            <button id="phone-auth-submit" type="button">Save name 🏌️</button>
+        </form>
+    </div>
+
+    <!-- Toaster for success message -->
+    <div id="toaster">Name saved successfully! Redirecting in <span id="countdown">3</span> seconds...</div>
+
+    <!-- JavaScript to handle form submission and cookie logic -->
+    <script>
+        // Function to get the value of a cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        // Function to set a cookie
+        function setCookie(cname, cvalue, exdays) {
+            const d = new Date();
+            d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + d.toUTCString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        // Check if the cookie exists on page load
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const allowEdit = urlParams.get('allowedit');
+
+            const nameCookie = getCookie('username');
+            if (nameCookie && allowEdit !== 'true') {
+                window.location.href = '/competition';
+            }
+        };
+
+        // Event listener for form submission
+        document.getElementById('phone-auth-submit').addEventListener('click', function() {
+            const nameInput = document.getElementById('name-input');
+            const name = nameInput.value.trim();
+            const errorElement = document.getElementById('name-form-error');
+            const toaster = document.getElementById('toaster');
+            const countdownElement = document.getElementById('countdown');
+
+            if (name === '') {
+                // Display an error message if the input is blank
+                errorElement.style.display = 'block';
+            } else {
+                // Hide the error message if it's visible
+                errorElement.style.display = 'none';
+
+                // Set the cookie with the name, expiring in 100 days
+                setCookie('username', name, 100);
+
+                // Show the success toaster message
+                toaster.classList.add('show');
+
+                // Start the countdown for redirection
+                let countdown = 3;
+                const countdownInterval = setInterval(() => {
+                    countdown -= 1;
+                    countdownElement.textContent = countdown;
+
+                    if (countdown === 0) {
+                        clearInterval(countdownInterval);
+                        window.location.href = '/competition';
+                    }
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

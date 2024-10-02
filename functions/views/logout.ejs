@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/master.css">
+    <title>Logging you out</title>
+    
+    <script type="module">
+        import { app, auth, firestore, analytics  } from '/scripts/firebase-init.js';
+        
+
+        function logout() {
+            auth.signOut().then(() => {
+                document.cookie = "idToken=; Max-Age=-99999999;";
+                window.location.href = '/'; // Redirect to server-side logout route after signing out
+            }).catch((error) => {
+                console.error('Sign Out Error', error);
+            });
+        }
+
+        logout();
+    </script>
+
+
+    
+    
+</head>
+<body>
+    <div class="full-pg-msg"> 
+        <span>LOGGING YOU OUT. YOU MIGHT ALREADY BE LOGGED OUT BUT WE'LL CHECK THAT.</span>
+    </div>
+   
+    <!-- Form to input verification code -->
+
+    <div id="verification-code-form" style="display:none;">
+        <input type="text" id="verification-code" placeholder="Enter verification code">
+        <button id="otp-auth" type="button">Verify Code</button>
+    </div>
+
+    
+
+</body>
+</html>
