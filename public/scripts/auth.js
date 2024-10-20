@@ -71,7 +71,8 @@ export function initializeRecaptcha() {
     signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier)
         .then((result) => {
             confirmationResult = result;
-            console.log("SMS sent. Please check your phone for the verification code.");
+            console.log("whatsagoinonnn");
+            console.log("SMS sentyyy. Please check your phone for the verification code.");
             document.getElementById('phone-form').style.display = 'none';
             document.getElementById('verification-code-form').style.display = 'block';
         })

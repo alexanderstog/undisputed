@@ -19,7 +19,7 @@ function checkUserAuth() {
             // Handle non-authenticated user
             document.cookie = "idToken=; Max-Age=-99999999;";
             if (window.location.pathname !== "/") {
-                window.location.href = "/";
+                window.location.href = "/getmein";
             }
         }
     });

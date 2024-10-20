@@ -1,0 +1,31 @@
+<nav class="navbar">
+    <a href="/user" style="text-decoration: none!important;color:white!important">
+        <div class="navbar-brand">
+            
+            
+            <span>👺</span>
+        </div>
+    </a>
+    
+    <div style="visibility:hidden;" class="whatsapp-share">❄️</div>
+    <div class="chat-info" onclick="goSnowflake()">
+        <%= chatData.group_name %>&nbsp;<a href="/chat/<%= chatId %>/participants" class="participants-icon">👥</a>
+    </div>
+</nav>
+
+
+
+<script>
+    function goSnowflake() {
+        console.log("snowflake mode enabled");
+    }
+
+    function closeMenu() {
+        const menu = document.getElementById('sideMenu');
+        menu.style.width = '0';
+    }
+</script>
+
+<style>
+    
+</style>

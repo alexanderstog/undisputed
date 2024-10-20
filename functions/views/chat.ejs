@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Bob</title>
+    <%- include('head-include') %>
+    
+
+</head>
+<body>
+    
+    <script>
+        /*// Function to get the value of a cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null; // Return null if the cookie doesn't exist
+        }
+    
+        // Check if the 'username' cookie exists
+        const username = getCookie('username');
+    
+        if (!username) {
+            // Redirect to /set-name if the 'username' cookie does not exist
+            window.location.href = '/set-name';
+        }
+        */
+    </script>
+    
+    <%- include('navbar-chat-include') %>
+    <div class="main-content-bob">
+
+        <div class="bob-chat" id="bob-chat" data-chat-id="<%= chatId %>" data-anonymous="<%= chatData.anonymous %>">
+            <div class="chat-wrapper">
+                <% messages.forEach(function(message) { %>
+                    <div data-message-sender="<%= message.userId %>" data-message-id="<%= message.id %>" class="response">
+                        <p class="message-sender">
+                            <%= message.sender %>
+                        </p>
+                        <span class="message-content"><%= message.content %></span>
+                        <p class="message-time">
+                            <%= new Date(message.timestamp.toDate()).toLocaleString() %>
+                        </p>
+                        <p class="message-sender-id">
+                            <%= message.userId %>
+                        </p>
+                        
+                    </div>
+                    
+                <% }) %>
+                <div id="dummy-message" class="response dummy-hide dummy-response message-right">
+                    <p class="message-sender">
+                        You. <span class="sending-format">Sending<span class="dots"></span></span>
+                        
+                    </p>
+                    <span class="message-content">Your message</span>
+                    <p class="message-time">
+                        dummy
+                    </p>
+                    <p class="message-sender-id">
+                        dummy
+                    </p>
+                </div>
+                <div class="response dummy-hide dummy-response typing-center">Someone is typing<span class="dots"></span></div>
+                <div class="response dummy-hide dummy-response thinking-center">Bob is thinking<span class="dots"></span></div>
+            </div>
+            
+                
+            
+            
+            <form id="ask-bob-form">
+                <input type="text" id="message" name="message" placeholder="Type something">
+                <button type="button" id="ask-bob-button">➡️</button>
+            </form>
+            
+        </div>
+
+        
+
+    
+
+    <script>
+        // const chatId = '<%= chatId %>';
+        // const username = 'banana';
+        
+    </script>
+    
+
+    
+    <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
+
+    <script type="module" src="/scripts/askbob.js"></script>
+
+
+</div>
+</body>
+</html>

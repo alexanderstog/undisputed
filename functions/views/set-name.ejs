@@ -57,7 +57,7 @@
 
         <!-- Form to input name -->
         <form id="phone-form">
-            <p>Welcome to the 2024 RAGS Okey Website.<br>Enter your name to get started.</p>
+            <p>Your customer welcome message</p>
             <p id="name-form-error" class="error" style="display:none;">Please enter your name.</p>
             <input type="text" id="name-input" placeholder="Your name">
             <button id="phone-auth-submit" type="button">Save name 🏌️</button>
@@ -91,7 +91,7 @@
 
             const nameCookie = getCookie('username');
             if (nameCookie && allowEdit !== 'true') {
-                window.location.href = '/competition';
+                window.location.href = '/chat';
             }
         };
 

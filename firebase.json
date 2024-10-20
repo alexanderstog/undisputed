@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/socket.io/**",
+        "function": "app"
+      },
+      {
         "source": "**",
         "function": "app"
       }
