@@ -32,7 +32,7 @@
     <%- include('navbar-chat-include') %>
     <div class="main-content-bob">
 
-        <div class="bob-chat" id="bob-chat" data-chat-id="<%= chatId %>" data-anonymous="<%= chatData.anonymous %>">
+        <div class="bob-chat" id="bob-chat" data-chat-id="<%= chatId %>" data-sub-id="<%= subId %>" data-anonymous="<%= chatData.anonymous %>">
             <div class="chat-wrapper">
                 <% messages.forEach(function(message) { %>
                     <div data-message-sender="<%= message.userId %>" data-message-id="<%= message.id %>" class="response">
@@ -63,7 +63,7 @@
                         dummy
                     </p>
                 </div>
-                <div class="response dummy-hide dummy-response typing-center">Someone is typing<span class="dots"></span></div>
+                <div id="dummy-typing" class="response dummy-hide dummy-response typing-center">Someone is typing<span class="dots"></span></div>
                 <div class="response dummy-hide dummy-response thinking-center">Bob is thinking<span class="dots"></span></div>
             </div>
             

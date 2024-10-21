@@ -65,44 +65,30 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-
-// Get the chatId and anonymous status from the HTML element
+// Get the chatId and subId from the HTML element
 const chatForm = document.getElementById('bob-chat');
 const chatId = chatForm.getAttribute('data-chat-id');
-const isAnonymous = chatForm.getAttribute('data-anonymous') === 'true';  // Check if chat is anonymous
+const subId = chatForm.getAttribute('data-sub-id');  // Get the subChat ID from the HTML
 
-// Initialize Firestore Query Based on Chat's Anonymous Status
+// Initialize Firestore Query to fetch messages from `subChats/{subId}/messages`
 let chatRef;
-if (isAnonymous) {
-    // Anonymous chat: use the private-messages/{userId}/messages collection
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            const userId = user.uid;
-            chatRef = query(collection(db, `chats/${chatId}/private-messages/${userId}/messages`), orderBy('timestamp'));
 
-            // Listen for real-time updates using Firestore's onSnapshot
-            onSnapshot(chatRef, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added') {
-                        handleNewMessage(change.doc);
-                    }
-                });
+// Make sure user is authenticated before listening to messages
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        // Use the subChat path to get messages from `chats/{chatId}/subChats/{subId}/messages`
+        chatRef = query(collection(db, `chats/${chatId}/subChats/${subId}/messages`), orderBy('timestamp'));
+
+        // Listen for real-time updates using Firestore's onSnapshot
+        onSnapshot(chatRef, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    handleNewMessage(change.doc);
+                }
             });
-        }
-    });
-} else {
-    // Non-anonymous chat: use the public messages collection
-    chatRef = query(collection(db, `chats/${chatId}/messages`), orderBy('timestamp'));
-
-    // Listen for real-time updates using Firestore's onSnapshot
-    onSnapshot(chatRef, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                handleNewMessage(change.doc);
-            }
         });
-    });
-}
+    }
+});
 
 // Function to handle new messages
 function handleNewMessage(doc) {
@@ -111,6 +97,7 @@ function handleNewMessage(doc) {
     const existingMessage = document.querySelector(`[data-message-id="${newMessageId}"]`);
     if (!existingMessage) {
         hideDummyMessage();
+        document.getElementById('message').value = "";
         const chatWrapper = document.querySelector('.chat-wrapper');
         const responseDiv = document.createElement('div');
         const user = auth.currentUser.uid;
@@ -141,14 +128,13 @@ function handleNewMessage(doc) {
     }
 }
 
+// Helper functions
 function showDummyMessage(message) {
-    // Get the main element
     const responseElement = document.getElementById('dummy-message');
     const chatWrapper = document.querySelector('.chat-wrapper');
     const messageContent = responseElement.querySelector('.message-content');
     messageContent.textContent = message;
     
-    // Detach and move the dummy-message to the end of chat-wrapper
     responseElement.remove();
     chatWrapper.appendChild(responseElement);
     
@@ -157,12 +143,10 @@ function showDummyMessage(message) {
 }
 
 function hideDummyMessage() {
-    // Get the main element
     const responseElement = document.getElementById('dummy-message');
     responseElement.style.display = 'none';
 }
 
-// Function to scroll to the bottom of the chat
 function scrollToBottom() {
     const chatWrapper = document.querySelector('.chat-wrapper');
     chatWrapper.scrollTop = chatWrapper.scrollHeight;
@@ -179,14 +163,13 @@ function getCookie(name) {
     return null; // Return null if the cookie doesn't exist
 }
 
-
-
 // Add message sending functionality
 document.getElementById('ask-bob-button').addEventListener('click', async () => {
     const message = document.getElementById('message').value;
+    console.log("tryin send message");
     const user = auth.currentUser;
     const sender = getCookie('username');
-    console.log("user sends message");
+    console.log("User sends message");
 
     if (!user) {
         console.error('No user is currently signed in');
@@ -197,8 +180,8 @@ document.getElementById('ask-bob-button').addEventListener('click', async () => 
     console.log('Current user ID:', userId);
 
     // Prepare the message payload
-    const payload = { message, chatId, userId, sender };
-
+    const payload = { message, chatId, subId, userId, sender };
+    console.log(">>>>payload", payload);
     // Post the message to the server
     try {
         const response = await fetch('/ask-bob', {

@@ -3,6 +3,7 @@
 <head>
     <title>Homepage</title>
     <%- include('head-include') %><!-- Firebase scripts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/7.2.3/css/flag-icons.min.css" integrity="sha512-bZBu2H0+FGFz/stDN/L0k8J0G8qVsAL0ht1qg5kTwtAheiXwiRKyCq1frwfbSFSJN3jooR5kauE0YjtPzhZtJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
     
 </head>
@@ -22,13 +23,23 @@
     <!-- Form to input phone number -->
     
     <form id="phone-form">
-        <p>Put in your number and you'll receive a one time passcode.</p>
+        <p>Welcome, human. This message doesn't really server a purpose for now.<br>Put in your phone number and we'll text you an access code.
+        </p>
         <p id="phone-form-message" class="" style="">E.g. 07821169566</p>
         <p id="phone-form-error" class="error" style="display:none;">Error message content</p>
+        <div class="phone-input-container">
+            <div class="region-dropdown">
+                <select id="region-select">
+                    <option class="fi-us" value="+44" data-flag="uk" selected>🇬🇧 +44</option>
+                    <option value="+1" data-flag="usa">🇺🇸 +1</option>
+                </select>
+                <input type="number" id="phone-number" placeholder="Enter phone number">
+            </div>
+            
+        </div>
         
-        <input type="number" id="phone-number" placeholder="Enter phone number">
-        <button id="phone-auth-submit" type="button"">Send Verification Code 
-            🏌️</button>
+        
+        <button id="phone-auth-submit" type="button"">Send Verification Code </button>
     </form>
     <!-- Form to input verification code -->
 
@@ -47,8 +58,8 @@
         document.getElementById('phone-auth-submit').addEventListener('click', () => {
             const phone = document.getElementById('phone-number').value;
             
-            
-            if (phone.length < 11|phone.length > 11) {
+            /*
+            if (phone.length < 10|phone.length > 10) {
                 document.getElementById('phone-form-error').innerHTML = "looks bad";
                 document.getElementById('phone-form-error').style.display = 'block';
                 console.log("phone looks bad");
@@ -57,6 +68,8 @@
                 console.log("+44" + phone.split("0")[1]);
                 initializeRecaptcha();
             }
+            */
+            initializeRecaptcha();
             
         });
 
@@ -71,6 +84,7 @@
 
 
     </script>
+    <script src="phone-script.js"></script>
 
 
 </body>

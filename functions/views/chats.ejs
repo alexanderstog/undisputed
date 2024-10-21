@@ -5,7 +5,6 @@
     <%- include('head-include') %><!-- Firebase scripts -->
     <style>
         /* Basic toaster styling */
-        
     </style>
 </head>
 <body>
@@ -19,15 +18,34 @@
             
             <% if (chatData && chatData.length > 0) { %>
                 <% chatData.forEach(chat => { %>
-                    <a href="/chat/<%= chat.id %>">
-                        <div class="chat-item">
-                        <div class="chat-logo" style="background-image: url('/img/<%= chat.img || 'dummy.png' %>')">&nbsp;</div>
-                        <div class="chat-info">
-                            <div class="chat-name"><%= chat.friendly_name || 'Unnamed Chat' %></div>
-                            <div class="chat-status"><%= chat.anonymous ? 'Private' : chat.group_name + ' | Group' %></div>
-                        </div>
-                        </div>
-                    </a>
+
+                    <!-- If there are subChats, iterate through them -->
+                    <% if (chat.subChats && chat.subChats.length > 0) { %>
+                        <% chat.subChats.forEach(subChat => { %>
+                            <a href="/chat/<%= chat.id %>/<%= subChat.id %>">
+                                <div class="chat-item">
+                                    <div class="chat-logo" style="background-image: url('/img/<%= chat.img || 'dummy.png' %>')">&nbsp;</div>
+                                    <div class="chat-info">
+                                        <div class="chat-name"><%= subChat.id || 'Unnamed SubChat' %></div>
+                                        <div class="chat-status"><%= subChat.group_name %></div>
+                                        <div class="chat-status">Members: <%= subChat.members +1 %></div>
+                                    </div>
+                                </div>
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <!-- If no subChats exist, show only one main chat -->
+                        <a href="/chat/<%= chat.id %>">
+                            <div class="chat-item">
+                                <div class="chat-logo" style="background-image: url('/img/<%= chat.img || 'dummy.png' %>')">&nbsp;</div>
+                                <div class="chat-info">
+                                    <div class="chat-name"><%= chat.friendly_name || 'Unnamed Chat' %></div>
+                                    <div class="chat-status"><%= chat.anonymous ? 'Private' : chat.group_name + ' | Group' %></div>
+                                </div>
+                            </div>
+                        </a>
+                    <% } %>
+                    
                 <% }); %>
             <% } else { %>
                 <p>You don't have any chats yet.</p>
@@ -40,7 +58,6 @@
     <div id="toaster"></div>
 
     <script>
-
         // Function to get the value of a cookie by name
         function getCookie(name) {
             const value = `; ${document.cookie}`;
@@ -73,27 +90,6 @@
                 setCookie('username', currentUsername, 30);
             }
         };
-        // Function to get the value of a cookie by name
-        /*
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-        }
-
-        // Check if the user is logged in on page load
-        window.onload = function() {
-            const username = getCookie('username');
-            if (!username) {
-                window.location.href = '/set-name';
-            } else {
-                loadChats();
-            }
-        };
-        */
-
-        // Function to load and display chats
-        
     </script>
 </body>
 </html>
