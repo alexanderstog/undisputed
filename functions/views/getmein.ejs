@@ -9,9 +9,9 @@
 </head>
 <body>
 
-    <%- include('navbar-include') %>
+    
 
-    <div class="main-content">
+    <div class="main-content margin-top">
 
     
     
@@ -56,6 +56,10 @@
         import { initializeRecaptcha } from '/scripts/auth.js';
 
         document.getElementById('phone-auth-submit').addEventListener('click', () => {
+            
+            //disable submit button
+            document.getElementById('phone-auth-submit').classList.add('disabled');
+            
             const phone = document.getElementById('phone-number').value;
             
             /*

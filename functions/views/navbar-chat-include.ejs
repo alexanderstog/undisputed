@@ -6,10 +6,18 @@
             <span>👺</span>
         </div>
     </a>
-    
-    <div style="visibility:hidden;" class="whatsapp-share">❄️</div>
-    <div  id="chat-info-button"  class="chat-info"">
-        <%= chatData.group_name %>&nbsp;<a class="participants-icon" >👥</a>
+    <div class="right-items">
+        <a>
+            <div id="snowflake" class="snowflake">❄️</div>
+            </a>
+        <div  id="chat-info-button"  class="chat-info"">
+            <%= chatData.group_name %>&nbsp;
+            <% if (chatData.direct) { %>
+                <span class="padlock-icon">🔒</span>
+            <% } else { %>
+                <a class="participants-icon">👥</a>
+            <% } %>
+        </div>
     </div>
 </nav>
 

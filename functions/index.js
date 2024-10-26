@@ -107,7 +107,7 @@ function authenticateRequest(req, res, next) {
   
   const token = req.cookies['__session'];
   if (!token) {
-    return res.render('getmein');
+    return res.render('getmein', { page: 'dashboard' });
     //res.send("what the fuck");
   }
 
@@ -148,8 +148,7 @@ function authenticateChat(req, res, next) {
   const token = req.cookies['__session'];
   console.log(">>>>authChat token" + token);
   if (!token) {
-    return res.render('getmein');
-    
+    return res.render('getmein', { message: 'You need to login before you can access this page.' });
   }
 
   admin.auth().verifyIdToken(token)
@@ -212,7 +211,7 @@ app.post('/set-token', (req, res) => {
   res.cookie('__session', idToken, {
     httpOnly: true,      // Prevent JavaScript access
     secure: process.env.NODE_ENV === 'production',  // Only use Secure in production
-    maxAge: 3600000,     // 1 hour expiration
+    maxAge: 2 * 24 * 60 * 60 * 1000,     // 1 hour expiration
     sameSite: 'Lax'      // Prevent CSRF in some cases
   });
 
@@ -480,6 +479,11 @@ app.get('/chat/:id/:sub', authenticateChat, async (req, res) => {
     subChatRef = db.collection('chats').doc(chatId).collection('subChats').doc(subId);
     
     // logic for handling when user isn't yet assigned to chat.
+
+    const userChatRef = db.collection('users').doc(userDocId).collection('personas').doc(chatId);
+    if (!userChatRef.exists){
+      await userChatRef.set({});
+    }
     
     userSubChatRef = db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId);
     //participantName = db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId);
@@ -562,12 +566,22 @@ app.get('/leavegroup/:id/:sub', authenticateChat, async (req, res) => {
 
     const userDocId = userSnapshot.docs[0].id;
     const userSubChatRef = db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId);
+    const userChatRef = db.collection('users').doc(userDocId).collection('personas').doc(chatId);
 
     // Check if the subChat document exists for the user and delete it if it does
     const userSubChatDoc = await userSubChatRef.get();
+    const userChatRefDoc = await userChatRef.get();
+    
     if (userSubChatDoc.exists) {
       await userSubChatRef.delete();
       console.log(`SubChat ${subId} removed from user's persona.`);
+      
+      // Check if there are any remaining subChats
+      const remainingSubChats = await userChatRef.collection('subChats').get();
+      if (remainingSubChats.empty) {
+        await userChatRef.delete();
+        console.log(`Chat ${chatId} removed from user's personas as it has no more subChats.`);
+      }
     }
 
     // Redirect to /chat once the subChat is removed or if it doesn't exist
@@ -618,11 +632,23 @@ app.get('/user', async (req, res) => {
     // Extract the user document
     const userDoc = querySnapshot.docs[0];
     const userData = userDoc.data();
-    const userName = userData.name || 'Anonymous';
+    
+    //const userName = userData.name || 'Anonymous';
+
+    let userName = userData.name;
+
+    if (!userName) {
+      userName = '';
+      res.render('set-name', { userName: userName });
+    } else {
+      res.redirect('/chat');
+    }
+
+    
 
     // Send the username back to the client
     //res.send(userName);
-    res.render('set-name', { userName: userName });
+    //res.render('set-name', { userName: userName });
 
   } catch (error) {
     console.error('Error fetching user data:', error);
@@ -687,6 +713,9 @@ app.post('/ask-bob', async (req, res) => {
 
     const chatData = chatDoc.data();
     const subChatData = subDoc.data();
+    const subChatContext = subChatData.subchat_context.join(' ');
+    console.log("chat conexxxxxxxxxxxxt", subChatContext);
+    
 
     // Fetch user's Firestore document ID based on `userId`
     //const userRecord = await admin.auth().getUser(userId);
@@ -736,6 +765,7 @@ app.post('/ask-bob', async (req, res) => {
       inputs: {
         message,
         prompty: chatData.prompty,
+        context: subChatContext,
         persona: chatData.persona,
         participants: JSON.stringify(subChatData.participants || []),
         todaysdate: new Date().toISOString(),
@@ -756,6 +786,7 @@ app.post('/ask-bob', async (req, res) => {
     const responseData = response.data;
     const chunks = responseData.split('\n').filter(chunk => chunk.trim() !== '');
     let finalResponse = '';
+    
 
     for (const chunk of chunks) {
       try {
@@ -769,7 +800,7 @@ app.post('/ask-bob', async (req, res) => {
       }
     }
 
-    if (finalResponse) {
+    if (finalResponse && !finalResponse.includes('__ignore')) {
       const newMessage = {
         content: finalResponse,
         sender: chatData.friendly_name,
@@ -779,6 +810,8 @@ app.post('/ask-bob', async (req, res) => {
 
       await messagesCollection.add(newMessage);
       res.json({ success: true, response: finalResponse });
+    } else if (finalResponse && finalResponse.includes('__ignore')) {
+      res.json({ success: true, response: 'Message ignored' });
     } else {
       res.status(500).json({ success: false, error: 'Failed to extract response' });
     }

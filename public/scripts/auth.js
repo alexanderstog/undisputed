@@ -7,6 +7,16 @@ const db = getFirestore(app);
 // Initialize Firebase Authentication
 const auth = getAuth(app);
 
+setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+        console.log("Persistence set to browserLocalPersistence.");
+    })
+    .catch((error) => {
+        console.error("Error setting persistence:", error);
+    });
+
+    
+
 let confirmationResult;
 
 // Function to initialize reCAPTCHA

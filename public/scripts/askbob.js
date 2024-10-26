@@ -30,13 +30,16 @@ const messagesCollectionPath = isDirect
     : `chats/${chatId}/subChats/${subId}/messages`;
 
 // Function to style existing messages based on userDocId
-function styleMessages(userDocId) {
+/*function styleMessages(userDocId) {
     document.querySelectorAll('[data-message-sender]').forEach((messageElement) => {
         if (messageElement.getAttribute('data-message-sender') === userDocId) {
             messageElement.classList.add('message-right');
+            console.log("checking styling");
         }
     });
+    
 }
+    */
 
 // Function to add a new message to the DOM with styling
 function appendMessageToDOM({ content, sender, timestamp, userId, messageId, isSending = false }) {
@@ -54,6 +57,7 @@ function appendMessageToDOM({ content, sender, timestamp, userId, messageId, isS
     `;
     chatWrapper.appendChild(responseDiv);
     scrollToBottom();
+    removeLoading();
 }
 
 // Message sending functionality
@@ -63,7 +67,7 @@ async function sendMessage() {
     const sender = getCookie('username');
     if (!auth.currentUser) return console.error('No user signed in');
 
-    const tempMessageId = `temp-${Date.now()}`;
+    //const tempMessageId = `temp-${Date.now()}`;
     const userId = userDocId;
     const timestamp = Math.floor(new Date().getTime() / 1000);
     // Display message immediately in the DOM
@@ -81,7 +85,7 @@ async function sendMessage() {
 
         const result = await response.json();
         if (result.success) {
-            messageInput.value = ""; // Clear input on success
+            console.log("successful message send");// Clear input on success
         }
     } catch (error) {
         console.error("Error sending message:", error);
@@ -89,7 +93,16 @@ async function sendMessage() {
 }
 
 // Event listener for send button
-document.getElementById('ask-bob-button').addEventListener('click', sendMessage);
+document.getElementById('ask-bob-button').addEventListener('click', function(){
+    const messageCheck = document.getElementById('message').value;
+    console.log("messagecheck", messageCheck);
+    if (messageCheck.length == 0){
+        console.log("message lingth doing noting", messageCheck.length);
+    } else {
+        console.log("message exists");
+        sendMessage();
+    }
+});
 
 // Firestore real-time listener
 onAuthStateChanged(auth, (user) => {
@@ -106,6 +119,7 @@ onAuthStateChanged(auth, (user) => {
                     const existingMessage = document.querySelector(`[data-message-timestamp="${newMessage.timestamp}"]`);
                     if (existingMessage) {
                         existingMessage.remove();
+                        clearMessageInput(); 
                     }
 
                     // Append confirmed message to DOM
@@ -133,3 +147,29 @@ function getCookie(name) {
     if (parts.length === 2) return parts.pop().split(';').shift();
     return null;
 }
+
+function removeLoading() {
+    const elements = document.getElementsByClassName('loading-opacity');
+    Array.from(elements).forEach(element => {
+        element.classList.remove('loading-opacity');
+    });
+    
+}
+
+function clearMessageInput (){
+    const messageInput = document.getElementById('message');
+    messageInput.value = '';
+}
+
+document.getElementById('ask-bob-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent form from reloading the page
+    document.getElementById('ask-bob-button').click(); // Trigger button click
+});
+
+// Execute removeLoading() after 2 seconds when the document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(removeLoading, 1000);
+});
+
+
+

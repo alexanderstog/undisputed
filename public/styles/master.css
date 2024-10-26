@@ -13,8 +13,19 @@ body {
 }
 
 .hide {
-    display:none;
+    display:none!important;
 }
+
+.disable {
+    pointer-events: none;     /* Prevents user interaction */
+    background-color: #f0f0f0; /* Light gray background */
+    color: #a0a0a0;           /* Gray text color */
+    opacity: 0.7;             /* Slightly transparent */
+    cursor: not-allowed;      /* Shows a 'not allowed' cursor */
+    border: 1px solid #dcdcdc; /* Optional: border style to indicate disable */
+}
+
+
 
 .highlight {
     border:solid 5px orange;
@@ -29,9 +40,13 @@ body {
     box-sizing: border-box;
 }
 
+.main-content.margin-top {
+    margin-top:40px;
+}
+
 #name-input, #phone-auth-submit {
     width:100%;
-    height:80px !important;
+    height:60px !important;
     text-align: center;
     font-size: 1.2rem;
     font-weight:bold;
@@ -41,6 +56,18 @@ body {
     margin-bottom: 10px;
     border:none;
     color:#333333;
+}
+
+button#otp-auth {
+    width:100%;
+    height:60px;
+    border:none;
+    text-align: center;
+    border-radius: 6px;
+}
+
+button.disable {
+    cursor:crosshair;
 }
 
 #phone-number {
@@ -59,11 +86,19 @@ body {
 }
 
 .region-dropdown {
-    margin-right: 10px;
+    width:100%;
+    position: relative;
+    height:60px;
 }
 
 #region-select {
+    position:absolute;
     display: block;
+    height:90%;
+    
+    background-color:#d2d2d2;
+    top: 5%;
+    left: 1%;
 }
 
 select {
@@ -73,16 +108,27 @@ select {
 }
 
 input#phone-number {
+    width: 100%!important;
     padding: 8px;
     font-size: 16px;
     width: 200px;
-    border: 1px solid #ccc;
+    
     border-radius: 4px;
+    padding-left: 110px;
+    text-align: left;
+}
+
+input#verification-code {
+    width:100%;
 }
 
 button {
     border:solid 2px #333333;
     color:#333333;
+}
+
+#leave-group-info {
+
 }
 
 
@@ -153,6 +199,16 @@ a {
 .navbar-brand {
     font-size: 24px;
 }
+
+.right-items {
+    display: flex;
+    gap:15px;
+}
+
+#snowflake {
+    font-size: 1rem;
+}
+
 .burger-menu {
     cursor: pointer;
     display: flex;
@@ -196,8 +252,7 @@ a {
 .phone-input-container {
     display: flex;
     align-items: center;
-    border: 1px solid #ccc;
-    padding: 5px;
+    margin-bottom:20px;
 }
 .phone-input-container span {
     color: #333;
@@ -412,7 +467,33 @@ body::-webkit-scrollbar {
     overflow: hidden;
 }
 
+.loading-opacity {
+    position: relative;
+    overflow: hidden;  /* Ensures the ripple effect stays within the element bounds */
+    opacity: 0.2;
+    animation: pulseOpacity 1.5s ease-in-out infinite;
+    background: linear-gradient(120deg, #98c4f4, #9c5898, #32d1af);
+    background-size: 200% 200%;
+    animation: pulseOpacity 1.5s ease-in-out infinite, colorRipple 3s ease-in-out infinite;
+}
 
+@keyframes pulseOpacity {
+    0%, 100% {
+        opacity: 0.1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+@keyframes colorRipple {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
 
 .chat-wrapper {
     height: 100%; /* Set a fixed height */
@@ -542,6 +623,16 @@ body::-webkit-scrollbar {
     border-radius: 100px;
     cursor: pointer;
     transition: background-color 0.3s;
+    position:relative;
+}
+
+.chat-item.priority-true {
+    padding:0px;
+}
+.chat-item.priority-true::after {
+    content:'';
+    position: absolute;
+    right:40px;
 }
 
 .chat-item-public {
@@ -560,7 +651,12 @@ body::-webkit-scrollbar {
     width: 50px;
     height: 50px;
     margin-right: 15px;
-    border-radius: 25px;
+    border-radius: 100px 70px 0px 100px;
+}
+
+.priority-true > .chat-logo {
+    width:120px!important;
+    height:80px;
 }
 
 .chat-name {

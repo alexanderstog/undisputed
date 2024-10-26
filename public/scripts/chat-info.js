@@ -45,9 +45,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (subChatDoc.exists()) {
                     const subChatData = subChatDoc.data();
+                    const direct = subChatData.direct;
+                    console.log("???????????direct", direct);
 
                     // Populate the modal with subChat metadata
                     document.getElementById('group_name_input').value = subChatData.group_name;
+                    if (direct === true) {
+                        console.log("direct = true");
+                        document.getElementById('group_name_input').classList.add('disable');
+                        document.getElementById('save-group-info').classList.add('hide');
+                        document.getElementById('leave-group-info').classList.add('hide');
+                        
+                    }
+
+
                     document.getElementById('participants_list').innerHTML = subChatData.participants
                         .map(participant => `<li>${participant}</li>`).join('');
                 } else {

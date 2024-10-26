@@ -45,6 +45,7 @@ async function fetchAndDisplayPublicChats() {
 
             // Reference for subChats within the current chat
             const subChatsRef = collection(db, 'chats', chatId, 'subChats');
+            //const subChatsQuery = query(subChatsRef, where('group', '==', true && 'company, '==', 'collaborate')); 
             const subChatsQuery = query(subChatsRef, where('group', '==', true)); 
             const subChatsSnapshot = await getDocs(subChatsQuery);
 

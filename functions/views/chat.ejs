@@ -35,7 +35,11 @@
     <div class="main-content-bob">
 
         <div class="bob-chat" id="bob-chat" data-direct="<%= chatData.direct %>" data-chat-id="<%= chatId %>" data-user-doc-id="<%= userDocId %>" data-sub-id="<%= subId %>" data-anonymous="<%= chatData.anonymous %>">
-            <div class="chat-wrapper">
+            
+            <div class="chat-wrapper loading-opacity">
+                <% if (chatData.initial_message) { %>
+                    <div class="response"><%= chatData.initial_message %></div>
+                <% } %>
                 <% messages.forEach(function(message) { %>
                     <div data-message-sender="<%= message.userId %>" data-message-timestamp="<%= message.timestamp %>" data-message-id="<%= message.id %>" class="response">
                         <p class="message-sender">
@@ -91,11 +95,11 @@
                       <label for="group_name_input" class="form-label">Group Name</label>
                       <input type="text" class="form-control" id="group_name_input" value="" />
                     </div>
-                    <div class="mb-3">
+                    <div class="hide mb-3">
                       <h6>Participants:</h6>
-                      <ul id="participants_list" class="list-group list-group-flush"></ul>
+                      <ul id="participants_list" class="hide list-group list-group-flush"></ul>
                     </div>
-                    <div class="mb-3">
+                    <div class="hide mb-3">
                       <input type="text" class="form-control" id="new_participant_input" placeholder="Invite participant (user ID)" />
                     </div>
                   </form>
