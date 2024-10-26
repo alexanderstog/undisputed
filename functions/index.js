@@ -29,6 +29,7 @@ app.use(cookieParser());
 
 var admin = require("firebase-admin");
 
+
 var serviceAccount = require("./serviceAccountKey.json");
 
 //wordware config
@@ -85,6 +86,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
+  
   res.render('logout');
 });
 
@@ -128,7 +130,7 @@ function authenticateRequest(req, res, next) {
           console.log(">>>>>>>User has no accessible chats");
         }
       } else {
-        console.log(">>>>>>>User document not found in Firestore");
+        //console.log(">>>>>>>User document not found in Firestore");
         req.user.accessibleChats = [];
       }
       console.log("Accessible chats for user:", req.user.accessibleChats);
@@ -233,16 +235,18 @@ app.get('/getmein', (req, res) => {
 
 // a user's 'homepage'
 // need to get all 
-app.get('/user', authenticateRequest, (req, res) => {
+app.get('/chat', authenticateRequest, (req, res) => {
   const uid = req.user.uid;
-  console.log(">>>>>>>>>>>>>>> uid is:" + uid);
+  console.log("User UID:", uid);
 
   let username;
+  let phoneNumber;
 
+  // Identify the user so we can get the chats
   admin.auth().getUser(uid)
     .then(userRecord => {
-      const phoneNumber = userRecord.phoneNumber; // Get the phone number from Auth
-      console.log(">>>>>>>> the phone number we're looking for is " + phoneNumber);
+      phoneNumber = userRecord.phoneNumber;
+      console.log("User's phone number:", phoneNumber);
 
       // Query Firestore for a document where the 'phone' field matches phoneNumber
       return db.collection('users')
@@ -252,9 +256,8 @@ app.get('/user', authenticateRequest, (req, res) => {
     })
     .then(querySnapshot => {
       if (!querySnapshot.empty) {
-        // Extract the document ID from the first (and presumably only) matching document
         const userDocId = querySnapshot.docs[0].id;
-        console.log('Document ID:', userDocId);
+        console.log('User Document ID:', userDocId);
         return userDocId; // Return the userDocId to the next .then()
       } else {
         console.log('No matching documents found');
@@ -262,10 +265,21 @@ app.get('/user', authenticateRequest, (req, res) => {
       }
     })
     .then(userDocId => {
-      console.log(">>>>>>>>>  userid is " + userDocId);
-
       if (!userDocId) {
-        res.send('need to do something with users that do not exist');
+        console.log("Creating new user document for phone:", phoneNumber);
+        return db.collection('users').add({
+          phone: phoneNumber,
+          createdAt: new Date(),
+          name: 'Anonymous' // Default name, can be updated later
+        })
+        .then(() => {
+          console.log('New user document created.');
+          res.redirect('/set-name');
+        })
+        .catch(error => {
+          console.error('Error creating new user document:', error);
+          res.status(500).send('An error occurred while creating user profile');
+        });
       } else {
         // Get the user document from the 'users' collection
         return db.collection('users').doc(userDocId).get()
@@ -284,27 +298,21 @@ app.get('/user', authenticateRequest, (req, res) => {
           })
           .then(chatsSnapshot => {
             // Create an array of chat IDs
-            const chatRefs = chatsSnapshot.docs.map(doc => {
-              if (doc.exists) {
-                return { 
-                  id: doc.id, // Chat ID
-                };
-              } else {
-                console.log(`Chat document ${doc.id} does not exist`);
-                return null;
-              }
-            }).filter(data => data !== null); // Filter out null values
+            const chatRefs = chatsSnapshot.docs.map(doc => doc.id);
+            console.log("Chat references found:", chatRefs);
 
             // Fetch both chat metadata and the subChat data for each chat
-            return Promise.all(chatRefs.map(chatRef => {
+            return Promise.all(chatRefs.map(chatId => {
               // Fetch the main chat metadata from the `chats` collection
               const fetchChatMetadata = db.collection('chats')
-                .doc(chatRef.id)
+                .doc(chatId)
                 .get()
                 .then(chatDoc => {
                   if (chatDoc.exists) {
+                    console.log("Main chat metadata for chatId:", chatId, chatDoc.data());
                     return chatDoc.data();
                   } else {
+                    console.log("No chat document found for chatId:", chatId);
                     return null;
                   }
                 });
@@ -313,71 +321,39 @@ app.get('/user', authenticateRequest, (req, res) => {
               const fetchSubChatRefsFromUser = db.collection('users')
                 .doc(userDocId)
                 .collection('personas')
-                .doc(chatRef.id)
+                .doc(chatId)
                 .collection('subChats')
                 .get()
                 .then(subChatRefsSnapshot => {
-                  return subChatRefsSnapshot.docs.map(refDoc => refDoc.id); // Collect only the subChat IDs (references)
+                  const subChatRefs = subChatRefsSnapshot.docs.map(refDoc => refDoc.id);
+                  console.log("SubChat references found for chatId:", chatId, subChatRefs);
+                  return subChatRefs;
                 });
 
-              // Combine both promises to get the main chat metadata and subChat references from the user
+              // Combine both promises to get the main chat metadata and subChat references
               return Promise.all([fetchChatMetadata, fetchSubChatRefsFromUser])
                 .then(([chatMetadata, subChatRefs]) => {
                   if (!chatMetadata) {
+                    console.log("Skipping chatId as no chat metadata found.");
                     return null; // Skip if no main chat metadata exists
                   }
 
-                  // Fetch the actual subChat metadata from the `chats/{chatId}/subChats` collection using the references
+                  // Fetch the actual subChat metadata from the `chats/{chatId}/subChats` collection
                   return db.collection('chats')
-                    .doc(chatRef.id)
+                    .doc(chatId)
                     .collection('subChats')
                     .get()
                     .then(subChatsSnapshot => {
-                      // Filter to include only subChats that match the references from the user collection
-                      let subChatData = subChatsSnapshot.docs
-                        .filter(subChatDoc => subChatRefs.includes(subChatDoc.id)) // Only include the referenced subChats
+                      const subChatData = subChatsSnapshot.docs
+                        .filter(subChatDoc => subChatRefs.includes(subChatDoc.id))
                         .map(subChatDoc => ({ id: subChatDoc.id, ...subChatDoc.data() }));
 
-                      // If no subChats exist in the user collection or chat collection, create a default one
-                      if (subChatData.length === 0) {
-                        const newSubChatId = db.collection('chats').doc().id; // Generate a unique ID for the new subChat
-                        const newSubChat = {
-                          group_name: 'Default SubChat',
-                          created_at: new Date(),
-                          // Add any other default fields for a new subChat here
-                        };
+                      console.log("SubChat data for chatId:", chatId, subChatData);
 
-                        // Create subChat in both the user's personas collection and the main chats collection
-                        const createInUserCollection = db.collection('users')
-                          .doc(userDocId)
-                          .collection('personas')
-                          .doc(chatRef.id)
-                          .collection('subChats')
-                          .doc(newSubChatId)
-                          .set(newSubChat);
-
-                        const createInChatsCollection = db.collection('chats')
-                          .doc(chatRef.id)
-                          .collection('subChats')
-                          .doc(newSubChatId)
-                          .set(newSubChat);
-
-                        // Wait for both creations and push into the subChatData array
-                        return Promise.all([createInUserCollection, createInChatsCollection])
-                          .then(() => {
-                            subChatData.push({ id: newSubChatId, ...newSubChat });
-                            return subChatData;
-                          });
-                      } else {
-                        return subChatData;
-                      }
-                    })
-                    .then(subChatData => {
-                      // Return the full chat data with the merged subChats
                       return {
-                        id: chatRef.id,
-                        ...chatMetadata,  // Include the main chat metadata
-                        subChats: subChatData // Include actual subChat metadata
+                        id: chatId,
+                        ...chatMetadata,
+                        subChats: subChatData
                       };
                     });
                 });
@@ -386,9 +362,9 @@ app.get('/user', authenticateRequest, (req, res) => {
           .then(chatDataWithIds => {
             // Filter out any null chats (in case a chat document doesn't exist)
             chatDataWithIds = chatDataWithIds.filter(chat => chat !== null);
+            console.log("Final chat data being passed to res.render:", chatDataWithIds);
 
             // Log and send the chat data along with the username to the frontend
-            console.log("PPPPP", chatDataWithIds);
             res.render('chats', { chatData: chatDataWithIds, username });
           })
           .catch(error => {
@@ -408,6 +384,74 @@ app.get('/user', authenticateRequest, (req, res) => {
 
 
 
+app.get('/create/chat/:id', authenticateChat, async (req, res) => {
+  const authUserId = req.user.uid;  // Firebase Auth user ID
+  const chatId = req.params.id;
+  let phoneNumber;
+
+  try {
+    // Get the phone number from Firebase Auth
+    const userRecord = await admin.auth().getUser(authUserId);
+    phoneNumber = userRecord.phoneNumber;
+    console.log("userphoen 777777777777777777", phoneNumber);
+    console.log("User's phone number:", phoneNumber);
+
+    // Query Firestore for the user document based on the phone number
+    const userSnapshot = await db.collection('users').where('phone', '==', phoneNumber).limit(1).get();
+    if (userSnapshot.empty) {
+      return res.status(404).send('User not found');
+    }
+
+    const userDocId = userSnapshot.docs[0].id;  // Get the Firestore userDocId
+    const userDocRef = db.collection('users').doc(userDocId);
+    const personaDocRef = userDocRef.collection('personas').doc(chatId);
+
+    // Check if the persona exists for the user
+    const personaDoc = await personaDocRef.get();
+
+    // If the persona doesn't exist, create it
+    if (!personaDoc.exists) {
+      console.log(`Persona for chatId ${chatId} does not exist. Creating...`);
+      await personaDocRef.set({
+        createdAt: new Date(),
+      });
+      console.log(`Persona for chatId ${chatId} created.`);
+    }
+
+    // Create a new subchat in both personas and chats collections
+    const newSubChatId = db.collection('chats').doc().id; // Generate a unique ID for the subchat
+    const newSubChat = {
+      createdAt: new Date(),
+      participants: [userDocId],  // Add the user as the first participant
+    };
+
+    // Add the new subchat to both collections (user's persona and main chats collection)
+    const createSubChatInUser = personaDocRef.collection('subChats').doc(newSubChatId).set(newSubChat);
+    const createSubChatInChats = db.collection('chats').doc(chatId).collection('subChats').doc(newSubChatId).set(newSubChat);
+
+    // Wait for both subchat creations to complete
+    await Promise.all([createSubChatInUser, createSubChatInChats]);
+
+    console.log(`SubChat ${newSubChatId} created for chat ${chatId}`);
+
+    // Send a response back to the client
+    res.status(200).redirect(`/chat/${chatId}/${newSubChatId}`);
+  } catch (error) {
+    console.error('Error creating subchat:', error);
+    res.status(500).send('Error creating subchat');
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -417,46 +461,81 @@ app.get('/user', authenticateRequest, (req, res) => {
 
 //handle anonymous chats
 app.get('/chat/:id/:sub', authenticateChat, async (req, res) => {
-  console.log("req.user in /chat/:id route:", req.user.user_id);
   const chatId = req.params.id;
   const subId = req.params.sub;
-  const userId = req.user.user_id;  // Assuming req.userId is available after authentication
-  console.log(">>>>>>>userId is", userId);
+  const authUserId = req.user.user_id;
+  let subChatRef;
+  let userSubChatRef;
 
   try {
-    // Fetch the subChat document from the `subChats` collection of the given chatId
-    const chatDoc = await db.collection('chats')
-      .doc(chatId)
-      .collection('subChats')
-      .doc(subId)
-      .get();
+    const userRecord = await admin.auth().getUser(authUserId);
+    const phoneNumber = userRecord.phoneNumber;
 
-    if (!chatDoc.exists) {
-      res.status(404).send('SubChat not found');
-      return;
+    const userSnapshot = await db.collection('users').where('phone', '==', phoneNumber).limit(1).get();
+    if (userSnapshot.empty) {
+      return res.status(404).send('User not found');
     }
 
-    const chatData = chatDoc.data();
+    const userDocId = userSnapshot.docs[0].id;
+    subChatRef = db.collection('chats').doc(chatId).collection('subChats').doc(subId);
     
-    // Fetch messages from the `messages` sub-collection within the `subChat`
-    const messagesSnapshot = await db.collection('chats')
-      .doc(chatId)
-      .collection('subChats')
-      .doc(subId)
-      .collection('messages')
-      .orderBy('timestamp')
-      .get();
+    // logic for handling when user isn't yet assigned to chat.
+    
+    userSubChatRef = db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId);
+    //participantName = db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId);
 
-    // Create an array of messages
+    const subChatDoc = await subChatRef.get();
+    
+    if (!userSubChatRef.exists) {
+      console.log("user didn't have subchat stored against them so creating it....");
+      
+      
+      //db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId).set({});
+      await userSubChatRef.set({});
+
+      let participants = subChatDoc.data().participants || [];
+      
+      let participantDocRef = await db.collection('users').doc(userDocId).get();
+      let participantName = participantDocRef.exists ? participantDocRef.data().name : "Unknown";
+
+      const userExistsInParticipants = participants.some(participant => participant.startsWith(userDocId));
+
+      if (!userExistsInParticipants) {
+        participants.push(`${userDocId} - ${participantName}`);  // Manually add the userDocId to the array
+      }
+
+      await subChatRef.update({ participants });
+
+      
+    }
+      
+
+    
+
+    if (!subChatDoc.exists) {
+      return res.status(404).send('SubChat not found');
+    }
+
+    const subChatData = subChatDoc.data();
+    const messagesCollectionPath = subChatData.direct
+      ? subChatRef.collection('private_messages').doc(userDocId).collection('messages')
+      : subChatRef.collection('messages');
+
+    // Ensure the collection path exists
+    const messagesExistsSnapshot = await messagesCollectionPath.limit(1).get();
+    if (messagesExistsSnapshot.empty && subChatData.direct) {
+      await messagesCollectionPath.doc().set({ content: "Starting private chat..." });
+    } else if (messagesExistsSnapshot.empty) {
+      await messagesCollectionPath.doc().set({ content: "Starting group chat..." });
+    }
+
+    const messagesSnapshot = await messagesCollectionPath.orderBy('timestamp').get();
     const messages = messagesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
 
-    console.log("Messages:", messages);
-
-    // Render the chat view with the subChat data and messages
-    res.render('chat', { chatData, chatId, subId, messages });
+    res.render('chat', { chatData: subChatData, chatId, subId, messages, userDocId });
   } catch (error) {
     console.error('Error fetching chat data:', error);
     res.status(500).send('An error occurred while fetching chat data');
@@ -464,131 +543,218 @@ app.get('/chat/:id/:sub', authenticateChat, async (req, res) => {
 });
 
 
-
-
-//route for a specific chat
-/*
-app.get('/chat/:id', authenticateChat, async (req, res) => {
+//handle a user quitting a group.
+app.get('/leavegroup/:id/:sub', authenticateChat, async (req, res) => {
   const chatId = req.params.id;
-  const userId = req.userId;
-  console.log(">>>>>>>>>>>>user id is", userId);
+  const subId = req.params.sub;
+  const authUserId = req.user.user_id;
+
   try {
-    const chatDoc = await db.collection('chats').doc(chatId).get();
-    //wanna try and get old messages here.
-    if (!chatDoc.exists) {
-      res.status(404).send('Chat not found');
-    } else {
-      // Fetch messages collection within the chat
-      const messagesSnapshot = await db.collection('chats').doc(chatId).collection('messages').orderBy('timestamp').get();
+    // Get the user's phone number from Firebase Auth
+    const userRecord = await admin.auth().getUser(authUserId);
+    const phoneNumber = userRecord.phoneNumber;
 
-    // Create an array of messages
-      const messages = messagesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      console.log(">>>>>>>>>>>messages is", messages);
-
-      const chatData = chatDoc.data();
-      res.render('chat', { chatData, chatId, messages });
+    // Fetch the Firestore document for the user based on their phone number
+    const userSnapshot = await db.collection('users').where('phone', '==', phoneNumber).limit(1).get();
+    if (userSnapshot.empty) {
+      return res.status(404).send('User not found');
     }
+
+    const userDocId = userSnapshot.docs[0].id;
+    const userSubChatRef = db.collection('users').doc(userDocId).collection('personas').doc(chatId).collection('subChats').doc(subId);
+
+    // Check if the subChat document exists for the user and delete it if it does
+    const userSubChatDoc = await userSubChatRef.get();
+    if (userSubChatDoc.exists) {
+      await userSubChatRef.delete();
+      console.log(`SubChat ${subId} removed from user's persona.`);
+    }
+
+    // Redirect to /chat once the subChat is removed or if it doesn't exist
+    res.redirect('/chat');
   } catch (error) {
-    console.error('Error fetching chat data:', error);
-    res.status(500).send('An error occurred while fetching chat data');
+    console.error("Error leaving group:", error);
+    res.status(500).send('An error occurred while leaving the group');
   }
 });
 
-app.get('/info', (req, res) => {
-  res.send('info about the current service');
+
+
+
+
+
+
+
+
+app.get('/user', async (req, res) => {
+  const token = req.cookies['__session'];
+  if (!token) {
+    res.redirect('/getmein');
+  }
+
+  try {
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+
+    // Get the authenticated user's phone number from Firebase Auth
+    const userRecord = await admin.auth().getUser(uid);
+    const phoneNumber = userRecord.phoneNumber;
+
+    if (!phoneNumber) {
+      return res.status(400).send('Phone number not available');
+    }
+
+    // Query Firestore to find the user document by matching the phone number
+    const querySnapshot = await db.collection('users')
+      .where('phone', '==', phoneNumber)
+      .limit(1)
+      .get();
+
+    if (querySnapshot.empty) {
+      return res.status(404).send('User not found');
+    }
+
+    // Extract the user document
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
+    const userName = userData.name || 'Anonymous';
+
+    // Send the username back to the client
+    //res.send(userName);
+    res.render('set-name', { userName: userName });
+
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).send('An error occurred while fetching user data');
+  }
 });
 
-app.get('/find', (req, res) => {
-  res.send('input and gubbins to navigate to your own chat');
+app.post('/save-name', async (req, res) => {
+  const { name, idToken } = req.body;
+
+  if (!name || !idToken) {
+    return res.status(400).send('Missing name or ID token');
+  }
+
+  try {
+    // Verify the Firebase ID token to get user details
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    // Get the user's phone number from Firebase Auth
+    const userRecord = await admin.auth().getUser(uid);
+    const phoneNumber = userRecord.phoneNumber;
+
+    // Find the user document in Firestore by phone number
+    const querySnapshot = await admin.firestore().collection('users')
+      .where('phone', '==', phoneNumber)
+      .limit(1)
+      .get();
+
+    if (querySnapshot.empty) {
+      return res.status(404).send('User not found');
+    }
+
+    // Update the user's name in Firestore
+    const userDocRef = querySnapshot.docs[0].ref;
+    await userDocRef.update({ name });
+
+    res.status(200).send('Name updated successfully');
+  } catch (error) {
+    console.error('Error updating name:', error);
+    res.status(500).send('An error occurred while updating the name');
+  }
 });
 
-app.get('/set-name', (req, res) => {
-  res.render('set-name');
-});
-*/
+
 
 
 
 app.post('/ask-bob', async (req, res) => {
-  const { message, chatId, subId, userId, sender } = req.body;  // Add subId to the request body
+  const { message, chatId, subId, userId, sender, timestamp } = req.body;
+  console.log("reqbody}}}}}}}}}}}}}}}}}}]", req.body);
 
   try {
-    
-    const chatRef = db.collection('chats').doc(chatId);  // Update path to subChat
+    const chatRef = db.collection('chats').doc(chatId);
     const chatDoc = await chatRef.get();
-
-    const subRef = db.collection('chats').doc(chatId).collection('subChats').doc(subId);  // Update path to subChat
+    const subRef = chatRef.collection('subChats').doc(subId);
     const subDoc = await subRef.get();
 
-    if (!chatDoc.exists) {
-      res.status(404).send('SubChat not found');
-      return;
+    if (!chatDoc.exists || !subDoc.exists) {
+      return res.status(404).send('Chat or SubChat not found');
     }
 
     const chatData = chatDoc.data();
-    let messagesCollection = subRef.collection('messages');  // Always use the subChat messages collection
-    let recentMessages = [];
+    const subChatData = subDoc.data();
 
-    // Add the user's message to the subChat's `messages` collection
+    // Fetch user's Firestore document ID based on `userId`
+    //const userRecord = await admin.auth().getUser(userId);
+    //const phoneNumber = userRecord.phoneNumber;
+    //const userSnapshot = await db.collection('users').doc(userId).get();
+    //if (userSnapshot.empty) {
+    //  return res.status(404).send('User not found');
+    //}
+    const userDocId = userId;
+
+    // Set up the appropriate collection path based on `direct`
+    const messagesCollection = subChatData.direct
+      ? subRef.collection('private_messages').doc(userDocId).collection('messages')
+      : subRef.collection('messages');
+
+    // Check if messages collection exists by attempting to get the first document
+    const messageExistsSnapshot = await messagesCollection.limit(1).get();
+    if (messageExistsSnapshot.empty && subChatData.direct) {
+      // Create the `private_messages` path if it doesn't exist for a direct chat
+      await messagesCollection.doc().set({ content: "Starting private chat..." });
+    } else if (messageExistsSnapshot.empty) {
+      // Create the `messages` path if it doesn't exist for a non-direct chat
+      await messagesCollection.doc().set({ content: "Starting group chat..." });
+    }
+
+    // Proceed with adding the user's message
     await messagesCollection.add({
       content: message,
-      timestamp: new Date(),
+      timestamp: timestamp,
       sender: sender,
-      userId: userId
+      userId: userDocId
     });
 
-    console.log(`Message added to chat ${chatId} subChat ${subId}`);
-
-    // Fetch the 15 most recent messages from the `subChats/{subId}/messages` collection
+    // Fetch recent messages and call the external API
     const recentMessagesSnapshot = await messagesCollection
-      .orderBy('timestamp', 'desc')  // Order by timestamp descending
-      .limit(15)  // Limit to 15 most recent messages
+      .orderBy('timestamp', 'desc')
+      .limit(15)
       .get();
 
-    // Format the 15 most recent messages as an array
-    recentMessages = recentMessagesSnapshot.docs.map(doc => ({
+    const recentMessages = recentMessagesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    })).reverse();  // Reverse to make them ascending (oldest to newest)
+    })).reverse();
 
-    const recentMessagesString = JSON.stringify(recentMessages);
-
-    // Fetch chat version, bearer token, and apiUrl for Bob's response
-    let chatVersion = "^" + chatData.version;
-    let bearerToken = chatData.bearerToken;
-    let prompty = chatData.prompty; //prompt from chat document
-    let persona = chatData.persona; //persona identifier from chat document
-    let participants = chatData.participants; //participants from chat document
-    let chatFriendlyName = chatData.friendly_name;
-    let apiUrl = chatData.apiUrl;
-    const todaysdate = new Date().toISOString();
-
+    // API call preparation
     const requestBody = {
       inputs: {
-        message: message,
-        prompty: prompty,
-        persona: persona,
-        participants: participants,
-        todaysdate: todaysdate,
-        recentMessages: recentMessagesString  // Include recent messages in the request body
+        message,
+        prompty: chatData.prompty,
+        persona: chatData.persona,
+        participants: JSON.stringify(subChatData.participants || []),
+        todaysdate: new Date().toISOString(),
+        recentMessages: JSON.stringify(recentMessages),
       },
-      version: chatVersion
+      version: `^${chatData.version}`
     };
 
-    // Make API call to Bob for the response
-    const response = await axios.post(apiUrl, requestBody, {
+    console.log("request body for api call:", requestBody);
+
+    const response = await axios.post(chatData.apiUrl, requestBody, {
       headers: {
-        'Authorization': `Bearer ${bearerToken}`,
+        'Authorization': `Bearer ${chatData.bearerToken}`,
         'Content-Type': 'application/json',
       }
     });
 
     const responseData = response.data;
     const chunks = responseData.split('\n').filter(chunk => chunk.trim() !== '');
-
     let finalResponse = '';
 
     for (const chunk of chunks) {
@@ -604,19 +770,14 @@ app.post('/ask-bob', async (req, res) => {
     }
 
     if (finalResponse) {
-      console.log("final response was found");
-
       const newMessage = {
         content: finalResponse,
-        sender: chatFriendlyName,  // Using chat's friendly name as the sender
-        timestamp: new Date(),
-        userId: 'bob-ai'  // Bob's userId
+        sender: chatData.friendly_name,
+        timestamp: Math.floor(new Date().getTime() / 1000),
+        userId: 'bob-ai'
       };
 
-      // Add Bob's response to the subChat's `messages` collection
       await messagesCollection.add(newMessage);
-
-      console.log("Bob's response added to the chat");
       res.json({ success: true, response: finalResponse });
     } else {
       res.status(500).json({ success: false, error: 'Failed to extract response' });
@@ -626,144 +787,6 @@ app.post('/ask-bob', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
-
-
-//message interaction logic
-/* 
-app.post('/ask-bob', async (req, res) => {
-  console.log(">>>>> bob has been asked");
-  const { message, chatId, userId, sender } = req.body;
-  
-  try {
-    // Get a reference to the chat document
-    const chatRef = db.collection('chats').doc(chatId);
-  
-    
-    console.log(`User is sending a message to chat ${chatId}`);
-    // Add the message to the 'messages' subcollection
-    await chatRef.collection('messages').add({
-      content: message,
-      timestamp: new Date(),
-      sender: sender,
-      userId: userId 
-    });
-
-    console.log(`Message added to chat ${chatId}`);
-  } catch (error) {
-    console.error('Error adding message to chat:', error);
-    return res.status(500).json({ success: false, error: 'Failed to save message' });
-  }
-
-
-  console.log(">>>>>>>>>>> chatId is" + chatId);
-  console.log(">>>>>>>>>>>" + chatId + "<<<<<<<<");
-  
-  // Initialize chatVersion, bearerToken, and apiUrl with default values
-  let chatVersion = ''; 
-  let bearerToken = ''; 
-  let apiUrl = ''; 
-
-  try {
-    console.log(">>>>>> get the chat document");
-    const chatDoc = await db.collection('chats').doc(chatId).get();
-    
-    if (chatDoc.exists) {
-      console.log(">>>>>>> the chat document exists");
-      const chatData = chatDoc.data();
-      console.log("chatData >>>>>>>>", chatData);
-      // Assign the values from chatDoc
-      chatVersion = "^" + chatData.version;
-      bearerToken = chatData.bearerToken;
-      apiUrl = chatData.apiUrl;
-      
-
-    } else {
-      console.log('XXXXXXXXXX Chat document not found');
-    }
-  } catch (error) {
-    console.error('XXXXXXXXXXXX Error fetching chat document:', error);
-  }
-  const todaysdate = new Date().toISOString();
-
-  const requestBody = {
-      inputs: {
-          message: message,
-          todaysdate: todaysdate
-      },
-      version: chatVersion
-  };
-
-  try {
-    //console.log(">>>>> apirequest information");
-    //console.log("xxxxxxxxxxx apiurl information" + apiUrl);
-    //console.log(bearerToken);
-    //console.log(requestBody);
-    
-    console.log(">>>> apiUrl:", apiUrl);
-    console.log(">>>> bearerToken:", bearerToken);
-    console.log(">>>> requestBody:", requestBody);
-
-    console.log("MMMMMMMMMMMMMMM About to make axios POST request");
-    const response = await axios.post(apiUrl, requestBody, {
-        headers: {
-            'Authorization': `Bearer ${bearerToken}`,
-            'Content-Type': 'application/json',
-        }
-    });
-    console.log("Axios POST request completed successfully");
-
-    const responseData = response.data;
-    console.log(">>>>>response data", responseData);
-
-    // Split the response data by newline characters to get individual JSON chunks
-    const chunks = responseData.split('\n').filter(chunk => chunk.trim() !== '');
-
-    let finalResponse = '';
-
-    // Loop through each chunk to find the 'outputs' object containing the 'response'
-    for (const chunk of chunks) {
-        try {
-            const parsedChunk = JSON.parse(chunk);
-            if (parsedChunk.type === 'chunk' && parsedChunk.value.type === 'outputs') {
-                // Extract the 'response' from the 'new_structured_generation' key
-                finalResponse = parsedChunk.value.values.new_structured_generation.response;
-                break;  // Stop once we find the desired 'response'
-            }
-        } catch (e) {
-            console.error('Error parsing chunk:', e.message);
-        }
-    }
-
-    if (finalResponse) {
-        console.log("final response was found");
-        // Add the final response to the messages of this chat
-        const newMessage = {
-            content: finalResponse,
-            sender: 'Bob',
-            timestamp: new Date(),
-            userId: 'bob-ai'  // You might want to use a specific ID for Bob
-        };
-
-        // Add the new message to the Firestore collection
-        await admin.firestore().collection(`chats/${chatId}/messages`).add(newMessage);
-
-        console.log("Bob's response added to the chat");
-        // res.json({ success: true, response: finalResponse });
-    } else {
-      console.log("error here as234234234234kdjaskldj");  
-      res.status(500).json({ success: false, error: 'Failed to extract response' });
-    }
-  } catch (error) {
-    console.log("error here askdjaskldj");
-      res.status(500).json({ success: false, error: error.message });
-  }
-});
-*/
-
-
-
-
 
 
 

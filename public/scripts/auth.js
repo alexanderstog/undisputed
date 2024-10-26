@@ -1,6 +1,9 @@
 import { app } from './firebase-init.js';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, collection, query, where, getDocs, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
+//initialize firestore
+const db = getFirestore(app);
 // Initialize Firebase Authentication
 const auth = getAuth(app);
 
@@ -67,11 +70,45 @@ export function verifyCode() {
     console.log("Confirmation code is:", code);
 
     confirmationResult.confirm(code)
-        .then((result) => {
-            console.log("User signed in successfully:", result.user);
-            
+        .then(async (result) => {
+            const user = result.user;
+            console.log("User signed in successfully:", user);
+
+            const phoneNumber = user.phoneNumber;
+            console.log("Authenticated phone number:", phoneNumber);
+
+            try {
+                // Check if the user exists in the Firestore database
+                const usersCollection = collection(db, 'users');
+                const q = query(usersCollection, where('phone', '==', phoneNumber));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    // User already exists, return the document ID
+                    const userDoc = querySnapshot.docs[0];
+                    console.log("User already exists with document ID:", userDoc.id);
+                    
+                    // You can now send the document ID to the server or use it as needed
+                    return userDoc.id;
+                } else {
+                    // User does not exist, create a new document
+                    const newUserDocRef = await addDoc(usersCollection, {
+                        phone: phoneNumber,
+                        createdAt: new Date(),
+                        // Add other default fields you want to store for the new user
+                    });
+
+                    console.log("New user created with document ID:", newUserDocRef.id);
+
+                    // You can now send the new document ID to the server or use it as needed
+                    return newUserDocRef.id;
+                }
+            } catch (error) {
+                console.error("Error querying or creating user:", error);
+            }
+
             // Get the idToken and send it to the server to set the cookie
-            result.user.getIdToken().then(token => {
+            user.getIdToken().then(token => {
                 console.log("Token received, sending to server...");
 
                 // Send the token to the server via POST request

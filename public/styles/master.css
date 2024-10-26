@@ -3,7 +3,7 @@
 
 
 body {
-    background:#f8f8f8;
+    background-color:#dddddd!important;
     margin:0px;
     font-family: "Montserrat", sans-serif!important;
 }
@@ -14,6 +14,10 @@ body {
 
 .hide {
     display:none;
+}
+
+.highlight {
+    border:solid 5px orange;
 }
 
 .main-content {
@@ -56,6 +60,10 @@ body {
 
 .region-dropdown {
     margin-right: 10px;
+}
+
+#region-select {
+    display: block;
 }
 
 select {
@@ -376,6 +384,22 @@ body::-webkit-scrollbar {
     color:#858585;
 }
 
+.sending {
+    background: linear-gradient(to right, #98c4f4, #9c5898, #32d1af);
+    background-size: 200% 100%;
+    animation: wave 2s infinite linear;
+    color: white; /* Optional: set text color if needed */
+}
+
+@keyframes wave {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
 .participants-icon {
     
 }
@@ -419,7 +443,7 @@ body::-webkit-scrollbar {
     width: 100%;
     padding: 10px;
     border-radius: 8px;
-    
+    background: white;
     text-align: left;
     font-size: 14px;
     box-sizing: border-box; /* Ensures padding is included in the element's height */
@@ -513,14 +537,23 @@ body::-webkit-scrollbar {
     display: flex;
     align-items: center;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+   
+    background-color: white;
+    border-radius: 100px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
+.chat-item-public {
+    border:none!important;
+}
+
 .chat-item:hover {
     background-color: #f5f5f5;
+}
+
+.chat-description {
+    text-align: left;
 }
 
 .chat-logo {

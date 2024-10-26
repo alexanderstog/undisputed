@@ -12,7 +12,7 @@
 
     <div class="main-content">
         <p><%= username %></p>
-        <h1>Your Chats</h1>
+        <h4>Your Chats</h4>
         
         <div class="chats-container">
             
@@ -22,25 +22,30 @@
                     <!-- If there are subChats, iterate through them -->
                     <% if (chat.subChats && chat.subChats.length > 0) { %>
                         <% chat.subChats.forEach(subChat => { %>
-                            <a href="/chat/<%= chat.id %>/<%= subChat.id %>">
-                                <div class="chat-item">
+                            <a href="/chat/<%= chat.id %>/<%= subChat.id != null ? subChat.id : 'create/' + chat.id %>">
+                                <div data-sub-chat-id="<%= chat.id %><%= subChat.id %>" class="chat-item">
                                     <div class="chat-logo" style="background-image: url('/img/<%= chat.img || 'dummy.png' %>')">&nbsp;</div>
                                     <div class="chat-info">
-                                        <div class="chat-name"><%= subChat.id || 'Unnamed SubChat' %></div>
-                                        <div class="chat-status"><%= subChat.group_name %></div>
-                                        <div class="chat-status">Members: <%= subChat.members +1 %></div>
+                                        <div class="chat-name"><%= subChat.group_name || chat.friendly_name %></div>
+                                        
+                                        <div class="chat-status">
+                                            <%= subChat.direct ? 'Private' : (subChat.participants.length > 1 ? 'Members: ' + subChat.participants.length : '') %>
+                                          </div>
+                                          
+                                        
                                     </div>
                                 </div>
                             </a>
                         <% }) %>
                     <% } else { %>
                         <!-- If no subChats exist, show only one main chat -->
-                        <a href="/chat/<%= chat.id %>">
-                            <div class="chat-item">
+                        <a href="/create/chat/<%= chat.id %>">
+                            <div data-chat-id="<%= chat.id %>" class="chat-item">
                                 <div class="chat-logo" style="background-image: url('/img/<%= chat.img || 'dummy.png' %>')">&nbsp;</div>
                                 <div class="chat-info">
                                     <div class="chat-name"><%= chat.friendly_name || 'Unnamed Chat' %></div>
-                                    <div class="chat-status"><%= chat.anonymous ? 'Private' : chat.group_name + ' | Group' %></div>
+                                    
+                                    
                                 </div>
                             </div>
                         </a>
@@ -51,6 +56,16 @@
                 <p>You don't have any chats yet.</p>
             <% } %>
             <!-- This section will be populated dynamically with user's chats -->
+        </div>
+
+        <h4>Join Groups</h4>
+            <div class="""">
+                <div id="public-chats-container" class="chats-container">
+                    
+                </div>
+            </div>
+        
+
         </div>
     </div>
 
@@ -91,5 +106,8 @@
             }
         };
     </script>
+
+    
+    <script type="module" src="/scripts/public-chats.js"></script>
 </body>
 </html>

@@ -28,21 +28,21 @@
         }
         */
     </script>
+
+    
     
     <%- include('navbar-chat-include') %>
     <div class="main-content-bob">
 
-        <div class="bob-chat" id="bob-chat" data-chat-id="<%= chatId %>" data-sub-id="<%= subId %>" data-anonymous="<%= chatData.anonymous %>">
+        <div class="bob-chat" id="bob-chat" data-direct="<%= chatData.direct %>" data-chat-id="<%= chatId %>" data-user-doc-id="<%= userDocId %>" data-sub-id="<%= subId %>" data-anonymous="<%= chatData.anonymous %>">
             <div class="chat-wrapper">
                 <% messages.forEach(function(message) { %>
-                    <div data-message-sender="<%= message.userId %>" data-message-id="<%= message.id %>" class="response">
+                    <div data-message-sender="<%= message.userId %>" data-message-timestamp="<%= message.timestamp %>" data-message-id="<%= message.id %>" class="response">
                         <p class="message-sender">
                             <%= message.sender %>
                         </p>
                         <span class="message-content"><%= message.content %></span>
-                        <p class="message-time">
-                            <%= new Date(message.timestamp.toDate()).toLocaleString() %>
-                        </p>
+                        
                         <p class="message-sender-id">
                             <%= message.userId %>
                         </p>
@@ -77,6 +77,38 @@
             
         </div>
 
+        <!-- Modal Structure -->
+        <div id="chat-info-modal" class="modal fade" tabindex="-1" aria-labelledby="chatInfoModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 id="chatInfoModalLabel" class="modal-title">Chat Info</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <form id="chat-info-form">
+                    <div class="mb-3">
+                      <label for="group_name_input" class="form-label">Group Name</label>
+                      <input type="text" class="form-control" id="group_name_input" value="" />
+                    </div>
+                    <div class="mb-3">
+                      <h6>Participants:</h6>
+                      <ul id="participants_list" class="list-group list-group-flush"></ul>
+                    </div>
+                    <div class="mb-3">
+                      <input type="text" class="form-control" id="new_participant_input" placeholder="Invite participant (user ID)" />
+                    </div>
+                  </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="leave-group-info" class="btn btn-primary" data-bs-dismiss="modal">Leave Group</button>
+                  <button id="save-group-info" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+
         
 
     
@@ -92,6 +124,7 @@
     <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
 
     <script type="module" src="/scripts/askbob.js"></script>
+    <script type="module" src="/scripts/chat-info.js"></script>
 
 
 </div>
