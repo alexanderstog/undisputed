@@ -35,7 +35,7 @@ const sortedChatData = chatData.slice().sort((a, b) => (b.priority === true) - (
                                         <div class="chat-name"><%= subChat.group_name || chat.friendly_name %></div>
                                         
                                         <div class="chat-status">
-                                            <%= subChat.direct ? '🔒 Private' : (subChat.participants.length > 1 ? '👥 Active Members: ' + subChat.participants.length : '') %>
+                                            <%= subChat.direct ? '🔒 Private' : (subChat.participants.length > 0 ? '👥 Active Members: ' + subChat.participants.length : '') %>
                                           </div>
                                           
                                         

@@ -7,7 +7,7 @@ app.use(express.static('public'));
 app.use(express.json());
 
 
-//webhooks for chat.
+//webhooks for ch
 const http = require('http');
 const socketIo = require('socket.io');
 // Create HTTP server and attach socket.io
@@ -201,6 +201,7 @@ app.post('/send-message', async (req, res) => {
 });
 
 app.post('/set-token', (req, res) => {
+  console.log("setting token for user");
   const { idToken } = req.body;
 
   if (!idToken) {
@@ -227,7 +228,44 @@ app.get('/getmein', (req, res) => {
   //console.log("req body", req.body);
 });
 
+// POST endpoint to copy user document and subcollections
+app.post("/copy-user-document", async (req, res) => {
+  const { sourceUid, targetUid } = req.body;
 
+  if (!sourceUid || !targetUid) {
+      return res.status(400).send("Source UID and target UID must be provided.");
+  }
+
+  try {
+      const sourceDocRef = db.collection('users').doc(sourceUid);
+      const targetDocRef = db.collection('users').doc(targetUid);
+
+      // Copy main document data
+      const sourceDoc = await sourceDocRef.get();
+      if (sourceDoc.exists) {
+          await targetDocRef.set(sourceDoc.data());
+      }
+
+      // Copy subcollections
+      const subCollections = await sourceDocRef.listCollections();
+      for (const subCollection of subCollections) {
+          const subCollectionRef = targetDocRef.collection(subCollection.id);
+          const subDocsSnapshot = await subCollection.get();
+
+          for (const subDoc of subDocsSnapshot.docs) {
+              await subCollectionRef.doc(subDoc.id).set(subDoc.data());
+          }
+      }
+
+      // Optionally delete the old document after copying
+      await sourceDocRef.delete();
+
+      res.status(200).send({ success: true, message: `Document copied from ${sourceUid} to ${targetUid}` });
+  } catch (error) {
+      console.error("Error copying user document:", error);
+      res.status(500).send({ success: false, error: error.message });
+  }
+});
 
 
 
@@ -713,8 +751,13 @@ app.post('/ask-bob', async (req, res) => {
 
     const chatData = chatDoc.data();
     const subChatData = subDoc.data();
-    const subChatContext = subChatData.subchat_context.join(' ');
-    console.log("chat conexxxxxxxxxxxxt", subChatContext);
+    let subChatContext = '';
+    if (subChatData.subchat_context && Array.isArray(subChatData.subchat_context)) {
+      subChatContext = subChatData.subchat_context.join(' ');
+      console.log("chat context:", subChatContext);
+    } else {
+      console.log("No subchat context found");
+    }
     
 
     // Fetch user's Firestore document ID based on `userId`

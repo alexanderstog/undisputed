@@ -120,11 +120,27 @@ input#phone-number {
 
 input#verification-code {
     width:100%;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 3rem;
+    letter-spacing: 1rem;
+}
+
+#otp-phone {
+    font-weight: bold;
+}
+
+input {
+    height:60px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    border:none;
 }
 
 button {
     border:solid 2px #333333;
     color:#333333;
+    cursor:pointer;
 }
 
 #leave-group-info {
@@ -439,7 +455,7 @@ body::-webkit-scrollbar {
     color:#858585;
 }
 
-.sending {
+.sending, .loading {
     background: linear-gradient(to right, #98c4f4, #9c5898, #32d1af);
     background-size: 200% 100%;
     animation: wave 2s infinite linear;

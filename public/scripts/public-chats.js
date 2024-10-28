@@ -1,6 +1,6 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-import { getFirestore, collection, doc, getDocs, query, where, FieldPath } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+import { getFirestore, collection, doc, getDocs, getDoc, query, where, FieldPath } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
 
 // Firebase configuration
@@ -42,11 +42,36 @@ async function fetchAndDisplayPublicChats() {
             const chatData = chatDoc.data();
             const chatId = chatDoc.id;
             console.log("Chat Metadata:", chatData, "Chat ID:", chatId);
-
+            // Get current user's company from their user document
+            const currentUser = auth.currentUser;
+            let userCompany;
+            
+            if (currentUser) {
+                try {
+                    const userDocRef = doc(db, 'users', currentUser.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists()) {
+                        userCompany = userDoc.data().company;
+                        console.log("User's company:", userCompany);
+                    }
+                } catch (error) {
+                    console.error("Error getting user's company:", error);
+                }
+            }
             // Reference for subChats within the current chat
             const subChatsRef = collection(db, 'chats', chatId, 'subChats');
-            //const subChatsQuery = query(subChatsRef, where('group', '==', true && 'company, '==', 'collaborate')); 
-            const subChatsQuery = query(subChatsRef, where('group', '==', true)); 
+            let subChatsQuery;
+            
+            if (userCompany) {
+                // Query for subChats matching the user's company
+                subChatsQuery = query(subChatsRef, where('group', '==', true), where('company', '==', userCompany));
+            } else {
+                // Query for subChats without a specified company
+                subChatsQuery = query(subChatsRef, where('group', '==', true), where('company', '==', null));
+            }
+            
+            //const subChatsQuery = query(subChatsRef, where('group', '==', true), where('company', '==', userCompany));
+            //const subChatsQuery = query(subChatsRef, where('group', '==', true)); 
             const subChatsSnapshot = await getDocs(subChatsQuery);
 
             // Check if there are any matching subChats

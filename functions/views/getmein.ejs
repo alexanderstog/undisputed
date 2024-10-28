@@ -44,7 +44,8 @@
     <!-- Form to input verification code -->
 
     <div id="verification-code-form" style="display:none;">
-        <input type="text" id="verification-code" placeholder="Enter verification code">
+        <p>Enter the code that's just been sent to <span id="otp-phone"></span></p>
+        <input type="text" id="verification-code" placeholder="">
         <button id="otp-auth" type="button">Verify Code</button>
     </div>
 </div>
@@ -58,7 +59,9 @@
         document.getElementById('phone-auth-submit').addEventListener('click', () => {
             
             //disable submit button
-            document.getElementById('phone-auth-submit').classList.add('disabled');
+            const phoneSubmitButton = document.getElementById('phone-auth-submit');
+            phoneSubmitButton.classList.add('disabled','loading');
+            phoneSubmitButton.textContent = 'Sending code';
             
             const phone = document.getElementById('phone-number').value;
             
@@ -88,7 +91,7 @@
 
 
     </script>
-    <script src="phone-script.js"></script>
+    
 
 
 </body>
