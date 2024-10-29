@@ -12,6 +12,7 @@
     
 
     <div class="main-content margin-top">
+        <div class="logo" style="margin:40px 0px 60px 0!important;">&nbsp;</div>
 
     
     
@@ -23,9 +24,9 @@
     <!-- Form to input phone number -->
     
     <form id="phone-form">
-        <p>Welcome, human. This message doesn't really server a purpose for now.<br>Put in your phone number and we'll text you an access code.
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
         </p>
-        <p id="phone-form-message" class="" style="">E.g. 07821169566</p>
+        
         <p id="phone-form-error" class="error" style="display:none;">Error message content</p>
         <div class="phone-input-container">
             <div class="region-dropdown">
@@ -45,6 +46,7 @@
 
     <div id="verification-code-form" style="display:none;">
         <p>Enter the code that's just been sent to <span id="otp-phone"></span></p>
+        <p id="otp-form-error" class="error" style="display:none;">Error message content</p>
         <input type="text" id="verification-code" placeholder="">
         <button id="otp-auth" type="button">Verify Code</button>
     </div>
@@ -55,6 +57,8 @@
     
         
         import { initializeRecaptcha } from '/scripts/auth.js';
+
+        
 
         document.getElementById('phone-auth-submit').addEventListener('click', () => {
             
@@ -85,6 +89,16 @@
         document.getElementById('otp-auth').addEventListener('click', () => {
             console.log("clicked to validate OTP");
             verifyCode();
+        });
+
+        document.getElementById('phone-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            document.getElementById('phone-auth-submit').click(); // Trigger button click
+        });
+
+        document.getElementById('verification-code-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form from reloading the page
+            document.getElementById('otp-auth').click(); // Trigger button click
         });
 
        

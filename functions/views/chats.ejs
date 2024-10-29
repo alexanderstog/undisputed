@@ -13,7 +13,7 @@ const sortedChatData = chatData.slice().sort((a, b) => (b.priority === true) - (
         /* Basic toaster styling */
     </style>
 </head>
-<body>
+<body data-user-id="<%= userId %>">
     <%- include('navbar-include') %>
 
     <div class="main-content">
@@ -67,6 +67,7 @@ const sortedChatData = chatData.slice().sort((a, b) => (b.priority === true) - (
         <h4>Join Groups</h4>
             <div class="""">
                 <div id="public-chats-container" class="chats-container">
+                    <div class="">Loading</div>
                     
                 </div>
             </div>

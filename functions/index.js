@@ -82,7 +82,7 @@ const db = admin.firestore();
 
 
 app.get('/', (req, res) => {
-  res.redirect('/user');
+  res.redirect('/chat');
 });
 
 app.get('/logout', (req, res) => {
@@ -139,7 +139,7 @@ function authenticateRequest(req, res, next) {
     .catch(error => {
       console.error('Error verifying token:', error);
       res.clearCookie('__session');  // Clear the token as it might be invalid/expired
-      res.redirect('/banana');  // Redirect to login page
+      res.redirect('/getmein');  // Redirect to login page
     });
 }
 
@@ -224,7 +224,22 @@ app.post('/set-token', (req, res) => {
 // login
 
 app.get('/getmein', (req, res) => {
-  res.render('getmein');
+  // Check if user has an active session token
+  const token = req.cookies['__session'];
+  if (token) {
+    // Verify the token
+    admin.auth().verifyIdToken(token)
+      .then(() => {
+        // Token is valid, redirect to chat
+        res.redirect('/chat');
+      })
+      .catch(() => {
+        // Token verification failed, continue to render login page
+        res.render('getmein');
+      });
+    return;
+  }
+  
   //console.log("req body", req.body);
 });
 
@@ -274,7 +289,8 @@ app.post("/copy-user-document", async (req, res) => {
 // need to get all 
 app.get('/chat', authenticateRequest, (req, res) => {
   const uid = req.user.uid;
-  console.log("User UID:", uid);
+  const userId = uid;
+  //console.log("User UID:", uid);
 
   let username;
   let phoneNumber;
@@ -283,7 +299,7 @@ app.get('/chat', authenticateRequest, (req, res) => {
   admin.auth().getUser(uid)
     .then(userRecord => {
       phoneNumber = userRecord.phoneNumber;
-      console.log("User's phone number:", phoneNumber);
+      //console.log("User's phone number:", phoneNumber);
 
       // Query Firestore for a document where the 'phone' field matches phoneNumber
       return db.collection('users')
@@ -336,7 +352,7 @@ app.get('/chat', authenticateRequest, (req, res) => {
           .then(chatsSnapshot => {
             // Create an array of chat IDs
             const chatRefs = chatsSnapshot.docs.map(doc => doc.id);
-            console.log("Chat references found:", chatRefs);
+            //console.log("Chat references found:", chatRefs);
 
             // Fetch both chat metadata and the subChat data for each chat
             return Promise.all(chatRefs.map(chatId => {
@@ -346,7 +362,7 @@ app.get('/chat', authenticateRequest, (req, res) => {
                 .get()
                 .then(chatDoc => {
                   if (chatDoc.exists) {
-                    console.log("Main chat metadata for chatId:", chatId, chatDoc.data());
+                    //console.log("Main chat metadata for chatId:", chatId, chatDoc.data());
                     return chatDoc.data();
                   } else {
                     console.log("No chat document found for chatId:", chatId);
@@ -399,10 +415,10 @@ app.get('/chat', authenticateRequest, (req, res) => {
           .then(chatDataWithIds => {
             // Filter out any null chats (in case a chat document doesn't exist)
             chatDataWithIds = chatDataWithIds.filter(chat => chat !== null);
-            console.log("Final chat data being passed to res.render:", chatDataWithIds);
+            //console.log("Final chat data being passed to res.render:", chatDataWithIds);
 
             // Log and send the chat data along with the username to the frontend
-            res.render('chats', { chatData: chatDataWithIds, username });
+            res.render('chats', { chatData: chatDataWithIds, username, userId });
           })
           .catch(error => {
             console.error('Error fetching chat data:', error);
@@ -424,22 +440,24 @@ app.get('/chat', authenticateRequest, (req, res) => {
 app.get('/create/chat/:id', authenticateChat, async (req, res) => {
   const authUserId = req.user.uid;  // Firebase Auth user ID
   const chatId = req.params.id;
-  let phoneNumber;
+  //let phoneNumber;
 
   try {
     // Get the phone number from Firebase Auth
+    /*
     const userRecord = await admin.auth().getUser(authUserId);
     phoneNumber = userRecord.phoneNumber;
     console.log("userphoen 777777777777777777", phoneNumber);
     console.log("User's phone number:", phoneNumber);
-
+    
     // Query Firestore for the user document based on the phone number
-    const userSnapshot = await db.collection('users').where('phone', '==', phoneNumber).limit(1).get();
+    
     if (userSnapshot.empty) {
       return res.status(404).send('User not found');
     }
-
-    const userDocId = userSnapshot.docs[0].id;  // Get the Firestore userDocId
+      */
+    
+    const userDocId = authUserId;  // Get the Firestore userDocId
     const userDocRef = db.collection('users').doc(userDocId);
     const personaDocRef = userDocRef.collection('personas').doc(chatId);
 
@@ -863,6 +881,35 @@ app.post('/ask-bob', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+app.post('/public-chats', async (req, res) => {
+  const userCompany = "collaborate"; // Replace with your actual logic to get the company
+  console.log("User company is:", userCompany);
+  try {
+      // Fetch all subChat documents from the collectionGroup
+      const subChatsSnapshot = await db.collectionGroup('subChats').get();
+
+      // Filter subChats based on the company field
+      const subChats = subChatsSnapshot.docs
+          .map(doc => ({
+              id: doc.id,
+              parentChatId: doc.ref.parent.parent.id,
+              ...doc.data()
+          }))
+          .filter(subChat => subChat.company === userCompany); // Filter by company
+
+      console.log("Filtered subChats:", subChats);
+      return res.status(200).json(subChats);
+  } catch (error) {
+      console.error("Error fetching public chats:", error);
+      return res.status(500).json({ error: "Failed to fetch public chats" });
+  }
+});
+
+
+
+
+
 
 
 

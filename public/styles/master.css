@@ -4,6 +4,9 @@
 
 body {
     background-color:#dddddd!important;
+    background-image:url('/img/bg.png');
+    background-size: cover;
+    background-position: center center;
     margin:0px;
     font-family: "Montserrat", sans-serif!important;
 }
@@ -18,11 +21,11 @@ body {
 
 .disable {
     pointer-events: none;     /* Prevents user interaction */
-    background-color: #f0f0f0; /* Light gray background */
+     /* Light gray background */
     color: #a0a0a0;           /* Gray text color */
     opacity: 0.7;             /* Slightly transparent */
     cursor: not-allowed;      /* Shows a 'not allowed' cursor */
-    border: 1px solid #dcdcdc; /* Optional: border style to indicate disable */
+    
 }
 
 
@@ -38,6 +41,7 @@ body {
     text-align: center;
     padding:10px;
     box-sizing: border-box;
+    min-height: 1000px;
 }
 
 .main-content.margin-top {
@@ -55,13 +59,14 @@ body {
     box-sizing: border-box;
     margin-bottom: 10px;
     border:none;
-    color:#333333;
+    
 }
 
 button#otp-auth {
     width:100%;
     height:60px;
     border:none;
+    font-size: 1.2rem;
     text-align: center;
     border-radius: 6px;
 }
@@ -96,7 +101,7 @@ button.disable {
     display: block;
     height:90%;
     
-    background-color:#d2d2d2;
+    background-color:#f5ecec;
     top: 5%;
     left: 1%;
 }
@@ -134,13 +139,20 @@ input {
     height:60px;
     margin-bottom: 20px;
     border-radius: 6px;
-    border:none;
+    
 }
 
 button {
+    background-color: #e087db;
     border:solid 2px #333333;
     color:#333333;
     cursor:pointer;
+    color: white;
+    font-weight: bold;
+}
+
+button, input, select {
+    border:none!important;
 }
 
 #leave-group-info {
@@ -163,14 +175,29 @@ h2 {
 .navbar-brand {
     font-size:1.2rem;
     font-family: "Rowdies", sans-serif;
+    background-image:url('/img/collaborate-logo.png');
+    background-size: contain;
+    background-position: center center;
+    background-repeat: no-repeat;
+    width:35px;
+}
+
+.logo {
+    background-image:url('/img/collaborate-logo.png');
+    background-size: contain;
+    background-position: center center;
+    background-repeat: no-repeat;
+    height: 60px;
+    width: 100%;
+    
+    
 }
 
 .full-pg-msg {
     height:100%;
     width:100%;
-    background-color: orange;
-    font-size:4rem;
-    font-family: "Rowdies", sans-serif;
+    text-align: center;
+    font-size:3rem;
 }
 
 .error {
@@ -200,17 +227,19 @@ h2 {
 
 a {
     text-decoration: none!important;
-    color:#333333;
+    color:#333333!important;
 }
 
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #1f0767;
+    background-color: #e087db;
     color: white;
     padding: 10px 20px;
     z-index: 1000;
+    position: fixed;
+    top:0;
 }
 .navbar-brand {
     font-size: 24px;
@@ -370,7 +399,7 @@ body::-webkit-scrollbar {
 }
 
 .message-sender {
-    color:#428d97;
+    color:#a59cca;
     font-size: 0.8rem;
     font-weight: bold;
     margin-bottom: 0px;
@@ -406,7 +435,11 @@ body::-webkit-scrollbar {
     
     width:80%;
     float:right;
-    background-color: #c6def7;
+    background-color: #483473;
+}
+
+.message-right > .message-sender, .message-right > .message-content {
+    color:white!important; 
 }
 
 .typing-center, .thinking-center {
@@ -456,7 +489,7 @@ body::-webkit-scrollbar {
 }
 
 .sending, .loading {
-    background: linear-gradient(to right, #98c4f4, #9c5898, #32d1af);
+    background: linear-gradient(to right, #98c4f4, #9c5898, #8158a7);
     background-size: 200% 100%;
     animation: wave 2s infinite linear;
     color: white; /* Optional: set text color if needed */
@@ -551,7 +584,13 @@ body::-webkit-scrollbar {
 #ask-bob-button {
     position:absolute;
     right:10px; /* Allow the button to take up equal space with the input */
-    background-color: white!important;
+    background-color: #cc82d8!important;
+    background-image:url('/img/send.png');
+    background-size: 60%;
+    background-position: center center;
+    background-repeat: no-repeat;
+    width:60px;
+    padding: 5px;
     
     border: none;
     border-radius: 0 6px 6px 0;

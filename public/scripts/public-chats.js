@@ -1,6 +1,6 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
-import { getFirestore, collection, doc, getDocs, getDoc, query, where, FieldPath } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+import { getFirestore, collectionGroup, query, doc, where, getDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
 import { getAuth } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
 
 // Firebase configuration
@@ -20,95 +20,84 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Function to fetch and display public chats and subchats
+// Fetch and display public subchats
 async function fetchAndDisplayPublicChats() {
+    console.log("Fetching public chats and subchats...");
+
     try {
-        console.log("Fetching public chats and subchats...");
-        
-        // Select the container element and ensure it exists
         const publicChatsContainer = document.getElementById('public-chats-container');
         if (!publicChatsContainer) {
             console.error("Element with ID 'public-chats-container' not found");
             return;
         }
-        publicChatsContainer.innerHTML = ''; // Clear previous content
+         // Clear previous content
 
-        // Fetch main chat documents
-        const chatsRef = collection(db, 'chats');
-        const chatsSnapshot = await getDocs(chatsRef);
-
-        // Process each chat document
-        for (const chatDoc of chatsSnapshot.docs) {
-            const chatData = chatDoc.data();
-            const chatId = chatDoc.id;
-            console.log("Chat Metadata:", chatData, "Chat ID:", chatId);
-            // Get current user's company from their user document
-            const currentUser = auth.currentUser;
-            let userCompany;
-            
-            if (currentUser) {
-                try {
-                    const userDocRef = doc(db, 'users', currentUser.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists()) {
-                        userCompany = userDoc.data().company;
-                        console.log("User's company:", userCompany);
-                    }
-                } catch (error) {
-                    console.error("Error getting user's company:", error);
-                }
-            }
-            // Reference for subChats within the current chat
-            const subChatsRef = collection(db, 'chats', chatId, 'subChats');
-            let subChatsQuery;
-            
-            if (userCompany) {
-                // Query for subChats matching the user's company
-                subChatsQuery = query(subChatsRef, where('group', '==', true), where('company', '==', userCompany));
-            } else {
-                // Query for subChats without a specified company
-                subChatsQuery = query(subChatsRef, where('group', '==', true), where('company', '==', null));
-            }
-            
-            //const subChatsQuery = query(subChatsRef, where('group', '==', true), where('company', '==', userCompany));
-            //const subChatsQuery = query(subChatsRef, where('group', '==', true)); 
-            const subChatsSnapshot = await getDocs(subChatsQuery);
-
-            // Check if there are any matching subChats
-            const subChats = subChatsSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // If there are matching subChats, display each subChat
-            subChats.forEach(subChat => {
-                const subChatIdValue = `${chatId}${subChat.id}`;
-
-                // Check if an element with this specific data-sub-chat-id already exists
-                if (!document.querySelector(`[data-sub-chat-id="${subChatIdValue}"]`)) {
-                    const subChatItem = document.createElement('div');
-                    subChatItem.innerHTML = `
-                        <a href="/chat/${chatId}/${subChat.id}">
-                            <div data-sub-chat-id="${subChatIdValue}" class="chat-item chat-item-public">
-                                <div class="chat-logo" style="background-image: url('/img/${subChat.img || chatData.img}')">&nbsp;</div>
-                                <div class="chat-info">
-                                    <div class="chat-name">${subChat.group_name || 'Unnamed SubChat'}</div>
-                                    <div class="chat-description">${subChat.description || ''}</div>
-                                </div>
-                            </div>
-                        </a>
-                    `;
-                    publicChatsContainer.appendChild(subChatItem);
-                } else {
-                    console.log(`Sub-chat with ID ${subChatIdValue} already exists, skipping.`);
-                }
-            });
+        const currentUser = document.body.getAttribute('data-user-id');
+        if (!currentUser) {
+            console.error("No user ID available to fetch public chats.");
+            return;
         }
+
+        // Fetch public chats from /get-public-chats endpoint using POST
+        const response = await fetch('/public-chats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId: currentUser })
+        });
+
+        if (!response.ok) {
+            console.error("Error fetching public chats:", response.statusText);
+            return;
+        }
+        publicChatsContainer.innerHTML = '';
+        const subChats = await response.json();
+        console.log("Number of matching subChats:", subChats.length);
+        
+        // Process and display each subChat
+        subChats.forEach(subChat => {
+
+            
+            
+            const { id, parentChatId, ...subChatData } = subChat;
+            console.log("iddddddddddddddd", id);
+            
+            console.log("Parent Chat ID:", parentChatId);
+            console.log("SubChat Data:", subChatData);
+
+            if (!document.querySelector(`[data-sub-chat-id="${parentChatId}${id}"]`)) {
+            
+            const subChatItem = document.createElement('div');
+            subChatItem.innerHTML = `
+                <a href="/chat/${parentChatId}/${id}">
+                    <div data-sub-chat-id="${parentChatId}${id}" class="chat-item chat-item-public">
+                        <div class="chat-logo" style="background-image: url('/img/${subChatData.img || 'default.png'}')">&nbsp;</div>
+                        <div class="chat-info">
+                            <div class="chat-name">${subChatData.group_name || 'Unnamed SubChat'}</div>
+                            <p style="margin-bottom:0px!important; text-align:left;">
+                                <span style="font-size:0.8rem; margin-bottom:0px!important;"></span>${subChatData.persona || ''}
+                            </p>
+                            <div class="chat-description">${subChatData.description || ''}</div>
+                        </div>
+                    </div>
+                </a>
+            `;
+            publicChatsContainer.appendChild(subChatItem);
+            }
+            // Rest of your display code goes here...
+        });
+
     } catch (error) {
         console.error("Error fetching public chats:", error);
-        setTimeout(fetchAndDisplayPublicChats, 5000);
     }
 }
 
 // Call the function when the page loads
 document.addEventListener('DOMContentLoaded', fetchAndDisplayPublicChats);
+
+
+// Call the function when the page loads
+document.addEventListener('DOMContentLoaded', fetchAndDisplayPublicChats);
+
+

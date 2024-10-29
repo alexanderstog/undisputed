@@ -31,6 +31,14 @@ function resetGetVerificationButton() {
     phoneSubmitButton.textContent = 'Get verification code';
 }
 
+function resetVerificationCodeForm(){
+    //const codeInput = document.getElementById('verification-code');
+    const codeInputButton = document.getElementById('otp-auth');
+    codeInputButton.classList.remove('disabled', 'loading');
+    //codeInput.textContent = '';
+    codeInputButton.textContent = 'Verify code';
+}
+
 let confirmationResult;
 let recaptchaVerifier;
 
@@ -75,6 +83,9 @@ export function initializeRecaptcha() {
 // Verify OTP code
 export async function verifyCode() {
     const code = document.getElementById('verification-code').value;
+    const verifyCodeButton = document.getElementById('otp-auth');
+    verifyCodeButton.classList.add('loading');
+    verifyCodeButton.textContent = "Validating";
     console.log("Confirmation code is:", code);
 
     try {
@@ -128,6 +139,10 @@ export async function verifyCode() {
         }
     } catch (error) {
         console.error("Error during verification or copy:", error);
+        resetVerificationCodeForm();
+        const otpFormError = document.getElementById('otp-form-error');
+        otpFormError.textContent = `Error sending SMS: ${error.message}`;
+        otpFormError.style.display = 'block';
     }
 }
 
